@@ -1,0 +1,20 @@
+# Copy this file, rename it gradle.properties and customise accordingly.
+
+remotePort=57771
+remoteHost=mydomain.com
+remoteUser=deploy
+
+# Comma separated list of local directories containing JARs
+libs=../../CorsFilter/build/libs
+
+# Directory where Tomcat is installed locally
+localTomcatRoot=/usr/local/tomcat
+
+# Location where app is to be deployed when deploylocal task is invoked.
+deployLocalRoot=~/recursiveloop/components/rest-barebones/deploy
+
+# Directory where Tomcat is installed on remote server.
+remoteTomcatRoot=/usr/local/apache-tomcat-7.0.57
+
+# Location where app is to be deployed on remote server.
+deployRemoteRoot=/home/deploy/webroot

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+  <Resource
+    name="jdbc/testdb"
+    auth="Container"
+    type="javax.sql.DataSource"
+    driverClassName="org.postgresql.Driver"
+    url="jdbc:postgresql://localhost:5432/testdb"
+    username="deploy"
+    password="78fec^a19be79d7e!31be32f"
+    maxActive="20"
+    maxIdle="10"
+    maxWait="-1" />
+</Context>

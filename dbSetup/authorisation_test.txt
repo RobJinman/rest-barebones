@@ -1,0 +1,11 @@
+Register account
+curl -v -H "content-type: application/json" -d '{"email": "jinmane@gmail.com"}' localhost:9090/rest/pending_account
+
+Activate account
+curl -v -H "content-type: application/json" -d '{"username": "mrjim", "password": "pineapple", "activationCode": "0817dd0406c223aee964a164ec0916b5"}' localhost:9090/rest/account
+
+Sign in
+curl -v -H "content-type: application/json" -d '{"username": "mrjim", "password": "pineapple"}' localhost:9090/rest/authtoken
+
+Access restricted resource
+curl -v --header "X-Username: mrjim" --header "X-Auth-Token: 51E70432C19EA04640977F2B3B7322EB" localhost:9090/rest/restrictedresource
