@@ -31,8 +31,6 @@ public class ConfigFactoryTest {
       .addAsResource("config.properties")
       .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
 
-    System.out.print(archive);
-
     return archive;
   }
 

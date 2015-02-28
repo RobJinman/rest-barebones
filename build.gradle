@@ -1,5 +1,3 @@
-// Must set JBOSS_HOME environment variable
-
 import com.recursiveloop.gradle.tasks.*
 
 apply plugin: "war"
@@ -118,7 +116,7 @@ cargo {
   local {
     outputFile = file("build/output.log")
     logLevel = "high"
-//    timeout = 60000
+    timeout = 120000
 
     installer {
       installUrl = "http://download.jboss.org/wildfly/8.2.0.Final/wildfly-8.2.0.Final.zip"
@@ -159,10 +157,22 @@ test {
 task integrationTest(type: Test) {
   description = "Run integration tests."
 
+  outputs.upToDateWhen { false }
+
   testClassesDir = sourceSets.integrationTest.output.classesDir
   classpath = sourceSets.integrationTest.runtimeClasspath
 
+  def jvmArgs = ""
+  if (project.hasProperty("debug")) {
+    def port = project.hasProperty("debugPort") ? project.debugPort : 8787;
+    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=$port,server=y,suspend=y";
+  }
+  else {
+    jvmArgs = "-DDummy"
+  }
+
   systemProperty "project.baseDir", projectRoot
+  systemProperty "project.jvmArgs", jvmArgs
 
   testLogging {
     exceptionFormat = "full"
