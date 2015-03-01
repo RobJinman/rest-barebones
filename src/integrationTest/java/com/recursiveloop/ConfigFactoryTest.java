@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(Arquillian.class)
 public class ConfigFactoryTest {
+
   @Deployment
   public static JavaArchive createDeployment() {
     JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "ConfigFactoryTest.jar")
@@ -45,6 +46,8 @@ public class ConfigFactoryTest {
 
   @Test
   public void inject_by_name() {
+    System.out.println("**((INJECT_BY_NAME))**");
+
     Assert.assertEquals("This is string A", m_stringA);
     Assert.assertEquals("This is string B", m_stringB);
     Assert.assertEquals("This is string C", m_stringC);
@@ -61,6 +64,8 @@ public class ConfigFactoryTest {
 
   @Test
   public void inject_by_member_name() {
+    System.out.println("**((INJECT_BY_MEMBER_NAME))**");
+
     Assert.assertEquals("This is string A", stringA);
     Assert.assertEquals("This is string B", stringB);
     Assert.assertEquals("This is string C", stringC);
@@ -74,6 +79,8 @@ public class ConfigFactoryTest {
 
   @Test
   public void inject_numbers() {
+    System.out.println("**((INJECT_MEMBERS))**");
+
     Assert.assertEquals(123, m_numberA.floatValue(), 0.1);
     Assert.assertEquals(-34.567, numberB.floatValue(), 0.0001);
   }

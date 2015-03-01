@@ -8,15 +8,16 @@
 
 package com.recursiveloop.integrationtest;
 
+import com.recursiveloop.integrationtest.common.StaticData;
 import com.recursiveloop.integrationtest.common.TestSuite;
 
-import com.recursiveloop.resources.RcAuthToken;
-import com.recursiveloop.models.UserCredentials;
-import com.recursiveloop.models.AuthToken;
+import com.recursiveloop.resources.RcRestrictedResource;
+import com.recursiveloop.models.RestrictedResource;
 import com.recursiveloop.exceptions.InternalServerException;
 import com.recursiveloop.exceptions.UnauthorisedException;
 import com.recursiveloop.DataConnection;
 import com.recursiveloop.annotations.Config;
+import com.recursiveloop.Common;
 
 import javax.inject.Inject;
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -46,14 +47,17 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.CallableStatement;
 import java.util.UUID;
+import org.jboss.resteasy.client.ClientRequest;
+import org.jboss.resteasy.client.ClientResponse;
+import java.io.IOException;
 
 
 @RunWith(Arquillian.class)
-public class RcAuthTokenTest {
+public class RcRestrictedResourceTest {
 
   @Deployment
   public static WebArchive createDeployment() {
-    return ShrinkWrap.create(WebArchive.class, "RcAuthTokenTest.war")
+    return ShrinkWrap.create(WebArchive.class, "RcRestrictedResourceTest.war")
       .addPackage("com/recursiveloop/integrationtest/common")
       .addPackage("com/recursiveloop")
       .addPackage("com/recursiveloop/models")
@@ -86,8 +90,9 @@ public class RcAuthTokenTest {
 
   @Test
   @InSequence(2)
-  public void setup() throws SQLException {
+  public void setup() throws SQLException, IOException {
     System.out.println("**((SETUP))**");
+    StaticData.clear();
     m_testSuite.prepDB();
 
     String q = "{ ? = call rl.registeruser(?) }";
@@ -110,54 +115,92 @@ public class RcAuthTokenTest {
 
     UUID accountId = (UUID)cs.getObject(1);
 
+    q = "{ ? = call rl.pwAuthenticate(?, ?) }";
+    cs = m_data.getConnection().prepareCall(q);
+
+    cs.registerOutParameter (1, Types.BINARY);
+    cs.setString(2, m_username);
+    cs.setString(3, m_password);
+    cs.execute();
+
+    byte[] bytes = cs.getBytes(1);
+    String token = Common.toHex(bytes);
+
+    StaticData.put("authToken", token);
+
     m_data.getConnection().commit();
+
+    StaticData.persist();
   }
 
   @Test
   @InSequence(3)
   @RunAsClient
   @Consumes(MediaType.APPLICATION_JSON)
-  public void with_good_credentials(@ArquillianResteasyResource("rest") RcAuthToken rcAuthToken)
-    throws InternalServerException, UnauthorisedException {
+  public void with_valid_token(@ArquillianResource URL base)
+    throws InternalServerException, UnauthorisedException, Exception {
 
-    System.out.println("**((WITH_GOOD_CREDENTIALS))**");
+    StaticData.load();
+    String token = StaticData.get("authToken");
 
-    UserCredentials credentials = new UserCredentials();
-    credentials.setUsername("martha");
-    credentials.setPassword("pineapple");
+    System.out.println("**((WITH_VALID_TOKEN))**");
 
-    AuthToken token = rcAuthToken.doPost(credentials);
+    ClientRequest request = new ClientRequest(new URL(base, "rest/restrictedresource").toExternalForm());
+    request.header("Accept", MediaType.APPLICATION_JSON);
 
-    Assert.assertNotNull(token);
-    Assert.assertEquals("F3AFAB0893DC740D84128C4DD0F012B9", token.getToken());
+    request.header("X-Username", m_username);
+    request.header("X-Auth-Token", token);
+
+    ClientResponse<RestrictedResource> response = request.get(RestrictedResource.class);
+    RestrictedResource entity = response.getEntity();
+
+    Assert.assertEquals(200, response.getStatus());
+    Assert.assertNotNull(entity);
   }
 
   @Test
   @InSequence(4)
   @RunAsClient
   @Consumes(MediaType.APPLICATION_JSON)
-  public void with_bad_credentials(@ArquillianResteasyResource("rest") RcAuthToken rcAuthToken) {
-    System.out.println("**((WITH_BAD_CREDENTIALS))**");
+  public void with_invalid_token(@ArquillianResource URL base)
+    throws InternalServerException, UnauthorisedException, Exception {
 
-    UserCredentials credentials = new UserCredentials();
-    credentials.setUsername("martha");
-    credentials.setPassword("pinapple");
+    System.out.println("**((WITH_INVALID_TOKEN))**");
 
-    try {
-      rcAuthToken.doPost(credentials);
-    }
-    catch (WebApplicationException ex) {
-      Response r = ex.getResponse();
-      Assert.assertEquals(401, r.getStatus());
-      return;
-    }
-    catch (Exception ex) {}
+    ClientRequest request = new ClientRequest(new URL(base, "rest/restrictedresource").toExternalForm());
+    request.header("Accept", MediaType.APPLICATION_JSON);
 
-    Assert.assertTrue(false);
+    request.header("X-Username", m_username);
+    request.header("X-Auth-Token", "DEADBEEF");
+
+    ClientResponse<RestrictedResource> response = request.get(RestrictedResource.class);
+    Assert.assertEquals(401, response.getStatus());
   }
 
   @Test
   @InSequence(5)
+  @RunAsClient
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void with_bad_token_username_combo(@ArquillianResource URL base)
+    throws InternalServerException, UnauthorisedException, Exception {
+
+    StaticData.load();
+    String token = StaticData.get("authToken");
+
+    System.out.println("**((WITH_BAD_TOKEN_USERNAME_COMBO))**");
+
+    ClientRequest request = new ClientRequest(new URL(base, "rest/restrictedresource").toExternalForm());
+    request.header("Accept", MediaType.APPLICATION_JSON);
+
+    request.header("X-Username", "badusername");
+    request.header("X-Auth-Token", token);
+
+    ClientResponse<RestrictedResource> response = request.get(RestrictedResource.class);
+    Assert.assertEquals(401, response.getStatus());
+  }
+
+  @Test
+  @InSequence(6)
   public void tear_down() throws SQLException {
     System.out.println("**((TEAR_DOWN))**");
     m_testSuite.prepDB();

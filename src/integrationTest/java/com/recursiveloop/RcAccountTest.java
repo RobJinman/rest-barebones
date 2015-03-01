@@ -9,16 +9,14 @@
 package com.recursiveloop.integrationtest;
 
 import com.recursiveloop.integrationtest.common.TestSuite;
+import com.recursiveloop.integrationtest.common.StaticData;
 
-import com.recursiveloop.resources.RcAuthToken;
+import com.recursiveloop.resources.RcAccount;
 import com.recursiveloop.models.UserCredentials;
-import com.recursiveloop.models.AuthToken;
 import com.recursiveloop.exceptions.InternalServerException;
 import com.recursiveloop.exceptions.UnauthorisedException;
 import com.recursiveloop.DataConnection;
-import com.recursiveloop.annotations.Config;
 
-import javax.inject.Inject;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.junit.InSequence;
@@ -35,10 +33,11 @@ import org.junit.Test;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 import java.net.URL;
+import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.NotAuthorizedException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -46,14 +45,15 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.CallableStatement;
 import java.util.UUID;
+import java.io.IOException;
 
 
 @RunWith(Arquillian.class)
-public class RcAuthTokenTest {
+public class RcAccountTest {
 
   @Deployment
   public static WebArchive createDeployment() {
-    return ShrinkWrap.create(WebArchive.class, "RcAuthTokenTest.war")
+    return ShrinkWrap.create(WebArchive.class, "RcAccountTest.war")
       .addPackage("com/recursiveloop/integrationtest/common")
       .addPackage("com/recursiveloop")
       .addPackage("com/recursiveloop/models")
@@ -86,8 +86,9 @@ public class RcAuthTokenTest {
 
   @Test
   @InSequence(2)
-  public void setup() throws SQLException {
+  public void setup() throws SQLException, IOException {
     System.out.println("**((SETUP))**");
+    StaticData.clear();
     m_testSuite.prepDB();
 
     String q = "{ ? = call rl.registeruser(?) }";
@@ -98,66 +99,105 @@ public class RcAuthTokenTest {
     cs.execute();
 
     String code = cs.getString(1);
-
-    q = "{ ? = call rl.confirmUser(?, ?, ?) }";
-    cs = m_data.getConnection().prepareCall(q);
-
-    cs.registerOutParameter (1, Types.OTHER);
-    cs.setString(2, m_username);
-    cs.setString(3, m_password);
-    cs.setString(4, code);
-    cs.execute();
-
-    UUID accountId = (UUID)cs.getObject(1);
-
+    StaticData.put("code", code);
     m_data.getConnection().commit();
+
+    Statement st = m_data.getConnection().createStatement();
+    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+
+    Assert.assertTrue(rs.next());
+    Assert.assertEquals(m_email, rs.getString("email"));
+    Assert.assertEquals(code, rs.getString("code"));
+    Assert.assertFalse(rs.next());
+    rs.close();
+
+    rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
+    Assert.assertFalse(rs.next());
+    rs.close();
+
+    StaticData.persist();
   }
 
   @Test
   @InSequence(3)
   @RunAsClient
   @Consumes(MediaType.APPLICATION_JSON)
-  public void with_good_credentials(@ArquillianResteasyResource("rest") RcAuthToken rcAuthToken)
+  public void with_incorrect_code_1(@ArquillianResteasyResource("rest") RcAccount rcAccount)
     throws InternalServerException, UnauthorisedException {
 
-    System.out.println("**((WITH_GOOD_CREDENTIALS))**");
+    System.out.println("**((WITH_INCORRECT_CODE))**");
 
     UserCredentials credentials = new UserCredentials();
-    credentials.setUsername("martha");
-    credentials.setPassword("pineapple");
+    credentials.setUsername(m_username);
+    credentials.setPassword(m_password);
+    credentials.setActivationCode("notthecorrectcode");
 
-    AuthToken token = rcAuthToken.doPost(credentials);
-
-    Assert.assertNotNull(token);
-    Assert.assertEquals("F3AFAB0893DC740D84128C4DD0F012B9", token.getToken());
+    rcAccount.doPost(credentials);
   }
 
   @Test
   @InSequence(4)
-  @RunAsClient
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void with_bad_credentials(@ArquillianResteasyResource("rest") RcAuthToken rcAuthToken) {
-    System.out.println("**((WITH_BAD_CREDENTIALS))**");
+  public void with_incorrect_code_2() throws SQLException, IOException {
+    StaticData.load();
+    String code = StaticData.get("code");
 
-    UserCredentials credentials = new UserCredentials();
-    credentials.setUsername("martha");
-    credentials.setPassword("pinapple");
+    Statement st = m_data.getConnection().createStatement();
+    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
 
-    try {
-      rcAuthToken.doPost(credentials);
-    }
-    catch (WebApplicationException ex) {
-      Response r = ex.getResponse();
-      Assert.assertEquals(401, r.getStatus());
-      return;
-    }
-    catch (Exception ex) {}
+    Assert.assertTrue(rs.next());
+    Assert.assertEquals(m_email, rs.getString("email"));
+    Assert.assertEquals(code, rs.getString("code"));
+    Assert.assertFalse(rs.next());
+    rs.close();
 
-    Assert.assertTrue(false);
+    rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
+
+    Assert.assertFalse(rs.next());
+    rs.close();
   }
 
   @Test
   @InSequence(5)
+  @RunAsClient
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void with_correct_code_1(@ArquillianResteasyResource("rest") RcAccount rcAccount)
+    throws InternalServerException, UnauthorisedException, IOException {
+
+    System.out.println("**((WITH_CORRECT_CODE))**");
+
+    StaticData.load();
+    String code = StaticData.get("code");
+
+    UserCredentials credentials = new UserCredentials();
+    credentials.setUsername("martha");
+    credentials.setPassword("pineapple");
+    credentials.setActivationCode(code);
+
+    Response r = rcAccount.doPost(credentials);
+    Assert.assertEquals(200, r.getStatus());
+  }
+
+  @Test
+  @InSequence(6)
+  public void with_correct_code_2() throws SQLException {
+    Statement st = m_data.getConnection().createStatement();
+    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+
+    Assert.assertFalse(rs.next());
+    rs.close();
+
+    rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
+
+    Assert.assertTrue(rs.next());
+    Assert.assertEquals(m_email, rs.getString("email"));
+    Assert.assertEquals(m_username, rs.getString("username"));
+    Assert.assertFalse(rs.next());
+
+    rs.close();
+  }
+
+  @Test
+  @InSequence(7)
   public void tear_down() throws SQLException {
     System.out.println("**((TEAR_DOWN))**");
     m_testSuite.prepDB();

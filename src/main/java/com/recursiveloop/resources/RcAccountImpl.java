@@ -29,7 +29,7 @@ import javax.inject.Inject;
 
 
 public class RcAccountImpl implements RcAccount {
-  private final static Logger m_logger = Logger.getLogger(RcAccount.class.getName());
+  private final static Logger m_logger = Logger.getLogger(RcAccountImpl.class.getName());
 
   @Inject
   DataConnection m_data;

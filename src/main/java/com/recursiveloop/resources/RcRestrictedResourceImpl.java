@@ -23,7 +23,7 @@ import javax.inject.Inject;
 
 
 public class RcRestrictedResourceImpl implements RcRestrictedResource {
-  private static final Logger m_logger = Logger.getLogger(RcRestrictedResource.class.getName());
+  private static final Logger m_logger = Logger.getLogger(RcRestrictedResourceImpl.class.getName());
   private static final String[] m_roles = { "ADMINISTRATOR", "AUTHORISED_USER" };
 
   @Inject

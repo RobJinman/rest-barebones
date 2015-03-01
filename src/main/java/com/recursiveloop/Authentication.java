@@ -42,6 +42,8 @@ public class Authentication {
         cs.setString(3, password);
         cs.execute();
 
+        m_data.getConnection().commit();
+
         token = Common.toHex(cs.getBytes(1));
       }
       catch (SQLException ex) {
@@ -90,6 +92,8 @@ public class Authentication {
         cs.setString(2, username);
         cs.setBytes(3, Common.fromHex(token));
         cs.execute();
+
+        m_data.getConnection().commit();
 
         // TODO
         return cs.getBoolean(1) ? "AUTHORISED_USER" : UNAUTHORISED_ROLE;

@@ -13,7 +13,7 @@ import java.util.logging.Level;
 
 
 public class RcUnrestrictedResourceImpl implements RcUnrestrictedResource {
-  private static final Logger m_logger = Logger.getLogger(RcUnrestrictedResource.class.getName());
+  private static final Logger m_logger = Logger.getLogger(RcUnrestrictedResourceImpl.class.getName());
 
   @Override
   public String doGet() {

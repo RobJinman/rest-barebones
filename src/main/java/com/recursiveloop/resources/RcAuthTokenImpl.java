@@ -21,7 +21,7 @@ import javax.inject.Inject;
 
 
 public class RcAuthTokenImpl implements RcAuthToken {
-  private final static Logger m_logger = Logger.getLogger(RcAuthToken.class.getName());
+  private final static Logger m_logger = Logger.getLogger(RcAuthTokenImpl.class.getName());
 
   @Inject
   Authentication m_auth;

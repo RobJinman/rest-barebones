@@ -9,11 +9,13 @@
 package com.recursiveloop.models;
 
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAccessType;
 
 
-@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class UserEmail {
+  @XmlElement(name = "email")
   private String m_email;
 
   public UserEmail() {
@@ -28,7 +30,6 @@ public class UserEmail {
     m_email = email;
   }
 
-  @XmlElement
   public String getEmail() {
     return m_email;
   }

@@ -20,14 +20,14 @@ public class UserCredentials {
   private static final int MAX_PASSWORD_LEN = 32;
   private static final Pattern USERNAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]{4,16}");
 
-  @XmlElement(name="username")
+  @XmlElement(name = "username")
   private String m_username;
 
-  @XmlElement(name="password")
+  @XmlElement(name = "password")
   private String m_password;
 
   // If it's a new account
-  @XmlElement(name="activationCode")
+  @XmlElement(name = "activationCode")
   private String m_activationCode;
 
   public UserCredentials() {

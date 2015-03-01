@@ -10,11 +10,7 @@ package com.recursiveloop.integrationtest;
 
 import com.recursiveloop.integrationtest.common.TestSuite;
 
-import com.recursiveloop.resources.RcAuthToken;
-import com.recursiveloop.models.UserCredentials;
-import com.recursiveloop.models.AuthToken;
-import com.recursiveloop.exceptions.InternalServerException;
-import com.recursiveloop.exceptions.UnauthorisedException;
+import com.recursiveloop.Authentication;
 import com.recursiveloop.DataConnection;
 import com.recursiveloop.annotations.Config;
 
@@ -26,8 +22,8 @@ import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.extension.rest.client.ArquillianResteasyResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
@@ -38,7 +34,7 @@ import java.net.URL;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.NotAuthorizedException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -49,11 +45,11 @@ import java.util.UUID;
 
 
 @RunWith(Arquillian.class)
-public class RcAuthTokenTest {
+public class AuthenticationTest {
 
   @Deployment
   public static WebArchive createDeployment() {
-    return ShrinkWrap.create(WebArchive.class, "RcAuthTokenTest.war")
+    return ShrinkWrap.create(WebArchive.class, "AuthenticationTest.war")
       .addPackage("com/recursiveloop/integrationtest/common")
       .addPackage("com/recursiveloop")
       .addPackage("com/recursiveloop/models")
@@ -72,22 +68,26 @@ public class RcAuthTokenTest {
   @Inject
   DataConnection m_data;
 
+  @Inject
+  Authentication m_auth;
+
   @Test
   @InSequence(1)
   public void connection_ok() {
-    System.out.println("**((CONNECTION_OK))**");
-
     Assert.assertTrue(m_data.isGood());
   }
 
   private static String m_email = "martha123@website.com";
   private static String m_username = "martha";
   private static String m_password = "pineapple";
+  private static String m_code = null;
+  private static String m_token = null;
 
   @Test
   @InSequence(2)
   public void setup() throws SQLException {
     System.out.println("**((SETUP))**");
+
     m_testSuite.prepDB();
 
     String q = "{ ? = call rl.registeruser(?) }";
@@ -97,7 +97,7 @@ public class RcAuthTokenTest {
     cs.setString(2, m_email);
     cs.execute();
 
-    String code = cs.getString(1);
+    m_code = cs.getString(1);
 
     q = "{ ? = call rl.confirmUser(?, ?, ?) }";
     cs = m_data.getConnection().prepareCall(q);
@@ -105,7 +105,7 @@ public class RcAuthTokenTest {
     cs.registerOutParameter (1, Types.OTHER);
     cs.setString(2, m_username);
     cs.setString(3, m_password);
-    cs.setString(4, code);
+    cs.setString(4, m_code);
     cs.execute();
 
     UUID accountId = (UUID)cs.getObject(1);
@@ -115,49 +115,34 @@ public class RcAuthTokenTest {
 
   @Test
   @InSequence(3)
-  @RunAsClient
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void with_good_credentials(@ArquillianResteasyResource("rest") RcAuthToken rcAuthToken)
-    throws InternalServerException, UnauthorisedException {
+  public void authenticate_with_good_credentials() throws SQLException, Exception {
+    System.out.println("**((AUTHENTICATE_WITH_GOOD_CREDENTIALS))**");
 
-    System.out.println("**((WITH_GOOD_CREDENTIALS))**");
-
-    UserCredentials credentials = new UserCredentials();
-    credentials.setUsername("martha");
-    credentials.setPassword("pineapple");
-
-    AuthToken token = rcAuthToken.doPost(credentials);
-
-    Assert.assertNotNull(token);
-    Assert.assertEquals("F3AFAB0893DC740D84128C4DD0F012B9", token.getToken());
+    m_token = m_auth.authenticate(m_username, m_password);
+    Assert.assertNotNull(m_token);
+    Assert.assertEquals("F3AFAB0893DC740D84128C4DD0F012B9", m_token);
   }
 
   @Test
   @InSequence(4)
-  @RunAsClient
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void with_bad_credentials(@ArquillianResteasyResource("rest") RcAuthToken rcAuthToken) {
-    System.out.println("**((WITH_BAD_CREDENTIALS))**");
+  public void authenticate_with_bad_credentials() throws SQLException, Exception {
+    System.out.println("**((AUTHENTICATE_WITH_BAD_CREDENTIALS))**");
 
-    UserCredentials credentials = new UserCredentials();
-    credentials.setUsername("martha");
-    credentials.setPassword("pinapple");
-
-    try {
-      rcAuthToken.doPost(credentials);
-    }
-    catch (WebApplicationException ex) {
-      Response r = ex.getResponse();
-      Assert.assertEquals(401, r.getStatus());
-      return;
-    }
-    catch (Exception ex) {}
-
-    Assert.assertTrue(false);
+    String token = m_auth.authenticate(m_username, m_password + "a");
+    Assert.assertNull(token);
   }
 
   @Test
   @InSequence(5)
+  public void get_role() throws SQLException, Exception {
+    System.out.println("**((GET_ROLE))**");
+
+    String role = m_auth.getRole(m_username, m_token);
+    Assert.assertEquals("AUTHORISED_USER", role);
+  }
+
+  @Test
+  @InSequence(6)
   public void tear_down() throws SQLException {
     System.out.println("**((TEAR_DOWN))**");
     m_testSuite.prepDB();

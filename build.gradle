@@ -84,7 +84,7 @@ dependencies {
 
   providedCompile "javax:javaee-api:7.0"
 
-  testCompile "org.mockito:mockito-core:1.+",
+  testCompile "org.mockito:mockito-core:1.10.19",
     "junit:junit:${testVersions.junit}"
 
   integrationTestCompile "org.jboss.arquillian.junit:arquillian-junit-container:${testVersions.arquillian}",
@@ -92,7 +92,10 @@ dependencies {
     "org.wildfly:wildfly-arquillian-container-managed:${testVersions.wildfly}",
     "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-gradle-depchain:${testVersions.shrinkWrapResolverGradle}",
     "org.jboss.arquillian.extension:arquillian-rest-client-impl-3x:1.0.0.Alpha3",
-    "org.jboss.resteasy:resteasy-jackson-provider:3.0.10.Final"
+    "org.jboss.arquillian.protocol:arquillian-protocol-servlet:1.1.7.Final",
+    "org.jboss.resteasy:resteasy-jackson-provider:3.0.10.Final",
+    "org.mockito:mockito-core:1.10.19",
+    "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain:2.1.1"
 
   def cargoVersion = "1.4.12"
   cargo "org.codehaus.cargo:cargo-core-uberjar:$cargoVersion",
