@@ -23,18 +23,33 @@
   version="3.0"
   metadata-complete="true">
 
+  <context-param>
+    <param-name>javax.faces.PROJECT_STAGE</param-name>
+    <param-value>Development</param-value>
+  </context-param>
+
   <display-name>REST Barebones</display-name>
   <description>
      A barebones RESTful Java EE web application
   </description>
 
   <servlet>
-      <servlet-name>index</servlet-name>
-      <jsp-file>/WEB-INF/jsp/index.jsp</jsp-file>
+    <servlet-name>Faces Servlet</servlet-name>
+    <servlet-class>javax.faces.webapp.FacesServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
   </servlet>
   <servlet-mapping>
-      <servlet-name>index</servlet-name>
-      <url-pattern>/index</url-pattern>
+      <servlet-name>Faces Servlet</servlet-name>
+      <url-pattern>/cms/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+      <servlet-name>hello</servlet-name>
+      <jsp-file>/WEB-INF/jsp/hello.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+      <servlet-name>hello</servlet-name>
+      <url-pattern>/hello</url-pattern>
   </servlet-mapping>
 
   <filter>
