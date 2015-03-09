@@ -62,14 +62,14 @@ configurations {
   [compile, runtime, providedRuntime]*.resolutionStrategy {
     failOnVersionConflict()
 
-    force "com.fasterxml.jackson.core:jackson-annotations:2.3.2",
-      "xml-apis:xml-apis:1.3.03",
-      "org.hamcrest:hamcrest-core:1.3"
+    force "com.fasterxml.jackson.core:jackson-annotations:2.+",
+      "xml-apis:xml-apis:1.+",
+      "org.hamcrest:hamcrest-core:1.+"
   }
 
   testRuntime {
     resolutionStrategy {
-      force "org.apache.felix:org.apache.felix.resolver:1.0.0"
+      force "org.apache.felix:org.apache.felix.resolver:1.+"
     }
   }
 
