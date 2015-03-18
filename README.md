@@ -1,6 +1,6 @@
-#rest-barebones
+#com.recursiveloop.webcommon
 
-A barebones RESTful Java EE web application intended to serve as the back-end of a Single Page Application or web service. Originally part of the JLoop project.
+Common web related code. The project also contains a demo app -- a barebones RESTful Java EE web application intended to serve as the back-end of a Single Page Application or web service. Originally part of the JLoop project.
 
 To build, type
 
