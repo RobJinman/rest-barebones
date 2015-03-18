@@ -1,4 +1,4 @@
-package com.recursiveloop;
+package com.recursiveloop.webcommon;
 
 import org.junit.After;
 import org.junit.Before;

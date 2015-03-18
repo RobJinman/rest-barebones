@@ -52,6 +52,15 @@ sourceSets {
       srcDir "src/integrationTest/resources"
     }
   }
+
+  webcommon {
+    java {
+      srcDir "src/main/java"
+      exclude "com/recursiveloop/webcommondemo/**"
+
+      compileClasspath += main.output
+    }
+  }
 }
 
 configurations {
@@ -72,6 +81,8 @@ configurations {
       force "org.apache.felix:org.apache.felix.resolver:1.+"
     }
   }
+
+  webcommonCompile.extendsFrom compile
 
   integrationTestCompile.extendsFrom testCompile
   integrationTestRuntime.extendsFrom testRuntime, integrationTestCompile
@@ -105,8 +116,6 @@ dependencies {
 tasks.withType(JavaCompile) {
   options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 }
-
-cargoRunLocal.dependsOn assemble
 
 cargo {
   containerId = "wildfly8x"
@@ -157,6 +166,10 @@ test {
   }
 }
 
+task buildWebcommon(type: Jar) {
+  from sourceSets.webcommon.output
+}
+
 task integrationTest(type: Test) {
   description = "Run integration tests."
 
@@ -186,4 +199,11 @@ task integrationTest(type: Test) {
     html.destination = "$buildDir/reports/integration"
     junitXml.destination = "$buildDir/test-results/integration"
   }
+}
+
+cargoRunLocal.dependsOn assemble
+assemble.dependsOn buildWebcommon
+
+artifacts {
+  webcommonCompile buildWebcommon
 }
