@@ -168,6 +168,11 @@ test {
 
 task buildWebcommon(type: Jar) {
   from sourceSets.webcommon.output
+
+  metaInf {
+    from "src/main/java/META-INF"
+    include "**"
+  }
 }
 
 task integrationTest(type: Test) {
