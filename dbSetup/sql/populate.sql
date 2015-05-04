@@ -1,4 +1,2 @@
-﻿--CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
 INSERT INTO rl.salt (salt, ts) VALUES (GEN_SALT('bf'), CURRENT_TIMESTAMP);
 INSERT INTO rl.salt (salt, ts) VALUES (GEN_SALT('bf'), CURRENT_TIMESTAMP);

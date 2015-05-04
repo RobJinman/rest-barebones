@@ -18,6 +18,6 @@ import javax.ws.rs.ext.Provider;
 public class BadRequestExceptionHandler implements ExceptionMapper<BadRequestException> {
   @Override
   public Response toResponse(BadRequestException ex) {
-    return Response.status(Status.UNAUTHORIZED).build();
+    return Response.status(Status.BAD_REQUEST).build();
   }
 }

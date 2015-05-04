@@ -40,7 +40,7 @@ printf "Creating database '$DB_NAME' ...\n"
 su - postgres -c "createdb --owner=\"$USER\" \"$DB_NAME\""
 
 printf "Creating extensions ...\n"
-su - postgres -c "psql --dbname=\"$DB_NAME\" -c \"CREATE EXTENSION IF NOT EXISTS \\\"pgcrypto\\\";\"CREATE EXTENSION IF NOT EXISTS \\\"uuid-ossp\\\";\""
+su - postgres -c "psql --dbname=\"$DB_NAME\" -c \"CREATE EXTENSION IF NOT EXISTS \\\"pgcrypto\\\"; CREATE EXTENSION IF NOT EXISTS \\\"uuid-ossp\\\";\""
 
 printf "Creating tables ...\n"
 PGPASSWORD="$PW" psql --dbname="$DB_NAME" --username="$USER" --file="$TABLES_SQL"
