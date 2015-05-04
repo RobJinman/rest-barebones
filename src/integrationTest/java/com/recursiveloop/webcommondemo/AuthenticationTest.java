@@ -118,8 +118,10 @@ public class AuthenticationTest {
     System.out.println("**((AUTHENTICATE_WITH_GOOD_CREDENTIALS))**");
 
     m_token = m_auth.authenticate(m_username, m_password);
+
+    // Should return a 32 character string
     Assert.assertNotNull(m_token);
-    Assert.assertEquals("F3AFAB0893DC740D84128C4DD0F012B9", m_token);
+    Assert.assertTrue(m_token.matches("[0-9A-F]{32}"));
   }
 
   @Test

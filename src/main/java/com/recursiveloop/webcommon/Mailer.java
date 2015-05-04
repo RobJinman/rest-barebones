@@ -46,34 +46,24 @@ public class Mailer {
   @Inject @Config("smtp.port")
   String m_smtpPort;
 
-  public void sendToSelf(String sender, String subject, String body) {
-    try {
-      Message message = new MimeMessage(getSession());
-      message.setFrom(new InternetAddress(sender));
-      message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(m_addr));
-      message.setSubject(subject);
-      message.setText(body);
+  public void sendToSelf(String sender, String subject, String body) throws MessagingException {
+    Message message = new MimeMessage(getSession());
+    message.setFrom(new InternetAddress(sender));
+    message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(m_addr));
+    message.setSubject(subject);
+    message.setText(body);
 
-      Transport.send(message);
-    }
-    catch (MessagingException ex) {
-      m_logger.log(Level.WARNING, "Error dispatching email", ex);
-    }
+    Transport.send(message);
   }
 
-  public void sendToRecipient(String recipient, String subject, String body) {
-    try {
-      Message message = new MimeMessage(getSession());
-      message.setFrom(new InternetAddress(m_addr));
-      message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
-      message.setSubject(subject);
-      message.setText(body);
+  public void sendToRecipient(String recipient, String subject, String body) throws MessagingException {
+    Message message = new MimeMessage(getSession());
+    message.setFrom(new InternetAddress(m_addr));
+    message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
+    message.setSubject(subject);
+    message.setText(body);
 
-      Transport.send(message);
-    }
-    catch (MessagingException ex) {
-      m_logger.log(Level.WARNING, "Error dispatching email", ex);
-    }
+    Transport.send(message);
   }
 
   private Session getSession() {

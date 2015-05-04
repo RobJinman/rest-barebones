@@ -128,8 +128,9 @@ public class RcAuthTokenTest {
 
     AuthToken token = rcAuthToken.doPost(credentials);
 
+    // Should return a 32 character string
     Assert.assertNotNull(token);
-    Assert.assertEquals("F3AFAB0893DC740D84128C4DD0F012B9", token.getToken());
+    Assert.assertTrue(token.getToken().matches("[0-9A-F]{32}"));
   }
 
   @Test

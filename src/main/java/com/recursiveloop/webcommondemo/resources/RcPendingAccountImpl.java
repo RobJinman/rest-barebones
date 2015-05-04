@@ -12,11 +12,9 @@ import com.recursiveloop.webcommondemo.models.UserEmail;
 import com.recursiveloop.webcommondemo.exceptions.InternalServerException;
 import com.recursiveloop.webcommondemo.exceptions.ConflictException;
 import com.recursiveloop.webcommondemo.exceptions.BadRequestException;
-
 import com.recursiveloop.webcommon.annotations.Config;
 import com.recursiveloop.webcommon.DataConnection;
 import com.recursiveloop.webcommon.Mailer;
-
 import javax.mail.MessagingException;
 import java.net.URLEncoder;
 import javax.ws.rs.core.Response;
@@ -99,6 +97,14 @@ public class RcPendingAccountImpl implements RcPendingAccount {
           String errMsg = "Error creating new user";
           m_logger.log(Level.SEVERE, errMsg, ex);
           throw new InternalServerException(errMsg, ex);
+        }
+      }
+      catch (MessagingException ex) {
+        try {
+          m_data.getConnection().rollback();
+        }
+        catch (SQLException ex2) {
+          m_logger.log(Level.SEVERE, "Error performing rollback", ex2);
         }
       }
     }

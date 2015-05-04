@@ -91,7 +91,7 @@ configurations {
 dependencies {
   runtime files("lib/postgresql-9.3-1101.jdbc41.jar")
 
-  runtime name: "CorsFilter"
+  runtime name: "corsFilter"
 
   providedCompile "javax:javaee-api:7.0"
 
