@@ -31,24 +31,19 @@ public class DataConnection {
   private static final Logger m_logger = Logger.getLogger(DataConnection.class.getName());
 
   private boolean m_isGood = false;
-  private Connection m_connection;
+  private Connection m_autoConn;
+  private Connection m_manualConn;
   private DataSource m_datasource;
 
   @Inject @Config("datasource")
   String m_dataSrcName;
 
   public Connection getConnection() {
-    try {
-      if (m_connection == null || m_connection.isClosed()) {
-        m_connection = newConnection();
-      }
-    }
-    catch (SQLException ex) {
-      m_connection = null;
-      m_logger.log(Level.SEVERE, "Error connecting to data source", ex);
-    }
+    return getConnection(false);
+  }
 
-    return m_connection;
+  public Connection getConnection(boolean autoCommit) {
+    return autoCommit ? getAutoConn() : getManualConn();
   }
 
   public boolean isGood() {
@@ -63,7 +58,8 @@ public class DataConnection {
 
       m_datasource = (DataSource)context.lookup(m_dataSrcName);
 
-      m_connection = newConnection();
+      m_autoConn = null;
+      m_manualConn = null;
 
       m_isGood = true;
     }
@@ -73,18 +69,49 @@ public class DataConnection {
     }
   }
 
-  private Connection newConnection() throws SQLException {
-    Connection c = m_datasource.getConnection();
-    c.setAutoCommit(false);
+  private Connection getAutoConn() {
+    try {
+      if (m_autoConn == null || m_autoConn.isClosed()) {
+        m_autoConn = m_datasource.getConnection();
+      }
+    }
+    catch (SQLException ex) {
+      m_autoConn = null;
+      m_logger.log(Level.SEVERE, "Error connecting to data source", ex);
+    }
 
-    return c;
+    return m_autoConn;
+  }
+
+  private Connection getManualConn() {
+    try {
+      if (m_manualConn == null || m_manualConn.isClosed()) {
+        m_manualConn = m_datasource.getConnection();
+        m_manualConn.setAutoCommit(false);
+      }
+    }
+    catch (SQLException ex) {
+      m_manualConn = null;
+      m_logger.log(Level.SEVERE, "Error connecting to data source", ex);
+    }
+
+    return m_manualConn;
   }
 
   @PreDestroy
   private void close() {
     try {
-      if (m_connection != null) {
-        m_connection.close();
+      if (m_autoConn != null) {
+        m_autoConn.close();
+      }
+    }
+    catch (Exception e) {
+      m_logger.log(Level.SEVERE, "Error closing data source connection", e);
+    }
+
+    try {
+      if (m_manualConn != null) {
+        m_manualConn.close();
       }
     }
     catch (Exception e) {
