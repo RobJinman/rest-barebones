@@ -37,6 +37,9 @@ public class Mailer {
   @Inject @Config("smtp.auth")
   String m_smtpAuth;
 
+  @Inject @Config("smtp.startssl.enable")
+  String m_smtpStartsslEnable;
+
   @Inject @Config("smtp.starttls.enable")
   String m_smtpStarttlsEnable;
 
@@ -48,7 +51,7 @@ public class Mailer {
 
   public void sendToSelf(String sender, String subject, String body) throws MessagingException {
     Message message = new MimeMessage(getSession());
-    message.setFrom(new InternetAddress(sender));
+    message.setFrom(new InternetAddress(m_addr));
     message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(m_addr));
     message.setSubject(subject);
     message.setText(body);
@@ -69,10 +72,15 @@ public class Mailer {
   private Session getSession() {
     Properties props = new Properties();
 
-    props.put("mail.smtp.auth", m_smtpAuth);
-    props.put("mail.smtp.starttls.enable", m_smtpStarttlsEnable);
-    props.put("mail.smtp.host", m_smtpHost);
-    props.put("mail.smtp.port", m_smtpPort);
+    props.setProperty("mail.smtp.auth", m_smtpAuth);
+    props.setProperty("mail.smtp.host", m_smtpHost);
+    props.setProperty("mail.smtp.port", m_smtpPort);
+    props.setProperty("mail.pop3.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+    props.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+    props.setProperty("mail.smtp.socketFactory.fallback", "false");
+    props.setProperty("mail.smtp.socketFactory.port", m_smtpPort);
+    props.setProperty("mail.smtp.starttls.enable", m_smtpStarttlsEnable);
+    props.setProperty("mail.smtp.startssl.enable", m_smtpStartsslEnable);
 
     return Session.getInstance(props, new javax.mail.Authenticator() {
       @Override
