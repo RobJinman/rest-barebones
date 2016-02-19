@@ -196,8 +196,8 @@ task integrationTest(type: Test) {
   systemProperty "project.jvmArgs", jvmArgs
 
   testLogging {
-    exceptionFormat = "full"
-    showStandardStreams = true
+//    exceptionFormat = "full"
+//    showStandardStreams = true
   }
 
   reports {
