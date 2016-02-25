@@ -1,12 +1,4 @@
-// This file is property of Recursive Loop Ltd.
-//
-// Author: Rob Jinman
-// Web: http://recursiveloop.org
-// Copyright Recursive Loop Ltd 2015
-// Copyright Rob Jinman 2015
-
-
-package com.recursiveloop.webcommon.annotations;
+package com.recursiveloop.webcommon.config;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.ElementType.METHOD;
@@ -22,6 +14,8 @@ import javax.enterprise.util.Nonbinding;
 @Qualifier
 @Retention(RUNTIME)
 @Target({TYPE, METHOD, FIELD, PARAMETER})
-public @interface Config {
-  @Nonbinding String value() default "[unassigned]";
+public @interface ConfigParam {
+  @Nonbinding String key() default "[unassigned]";
+  @Nonbinding boolean mandatory() default false;
+  @Nonbinding String defaultValue() default "";
 }

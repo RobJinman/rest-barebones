@@ -14,11 +14,7 @@ import com.recursiveloop.webcommondemo.exceptions.InternalServerException;
 import com.recursiveloop.webcommondemo.exceptions.UnauthorisedException;
 import com.recursiveloop.webcommon.test.StaticData;
 import com.recursiveloop.webcommon.test.TestSuite;
-import com.recursiveloop.webcommon.DataConnection;
-import com.recursiveloop.webcommon.annotations.Config;
 import com.recursiveloop.webcommon.Common;
-
-import javax.inject.Inject;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.junit.InSequence;
@@ -28,17 +24,21 @@ import org.jboss.arquillian.extension.rest.client.ArquillianResteasyResource;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.jboss.resteasy.client.ClientRequest;
+import org.jboss.resteasy.client.ClientResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
-import java.net.URL;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.WebApplicationException;
+import javax.inject.Inject;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -46,8 +46,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.CallableStatement;
 import java.util.UUID;
-import org.jboss.resteasy.client.ClientRequest;
-import org.jboss.resteasy.client.ClientResponse;
+import java.net.URL;
 import java.io.IOException;
 
 
@@ -59,7 +58,7 @@ public class RcRestrictedResourceTest {
     return ShrinkWrap.create(WebArchive.class, "RcRestrictedResourceTest.war")
       .addPackage("com/recursiveloop/webcommon/test")
       .addPackage("com/recursiveloop/webcommon")
-      .addPackage("com/recursiveloop/webcommon/annotations")
+      .addPackage("com/recursiveloop/webcommon/config")
       .addPackage("com/recursiveloop/webcommondemo")
       .addPackage("com/recursiveloop/webcommondemo/models")
       .addPackage("com/recursiveloop/webcommondemo/resources")
@@ -73,15 +72,15 @@ public class RcRestrictedResourceTest {
   @Inject
   TestSuite m_testSuite;
 
-  @Inject
-  DataConnection m_data;
+  @Resource(lookup="java:comp/env/jdbc/maindb")
+  DataSource m_data;
 
   @Test
   @InSequence(1)
   public void connection_ok() {
     System.out.println("**((CONNECTION_OK))**");
 
-    Assert.assertTrue(m_data.isGood());
+    Assert.assertNotNull(m_data);
   }
 
   private static String m_email = "martha123@website.com";
@@ -95,42 +94,53 @@ public class RcRestrictedResourceTest {
     StaticData.clear();
     m_testSuite.prepDB();
 
-    String q = "{ ? = call rl.registeruser(?) }";
-    CallableStatement cs = m_data.getConnection().prepareCall(q);
+    try (
+      Connection con = m_data.getConnection();
+    ) {
+      String q = "{ ? = call rl.registeruser(?) }";
+      String code = null;
 
-    cs.registerOutParameter (1, Types.VARCHAR);
-    cs.setString(2, m_email);
-    cs.execute();
+      try (
+        CallableStatement cs = con.prepareCall(q);
+      ) {
+        cs.registerOutParameter (1, Types.VARCHAR);
+        cs.setString(2, m_email);
+        cs.execute();
 
-    String code = cs.getString(1);
+        code = cs.getString(1);
+      }
 
-    q = "{ ? = call rl.confirmUser(?, ?, ?) }";
-    cs = m_data.getConnection().prepareCall(q);
+      q = "{ ? = call rl.confirmUser(?, ?, ?) }";
 
-    cs.registerOutParameter (1, Types.OTHER);
-    cs.setString(2, m_username);
-    cs.setString(3, m_password);
-    cs.setString(4, code);
-    cs.execute();
+      try (
+        CallableStatement cs = con.prepareCall(q);
+      ) {
+        cs.registerOutParameter (1, Types.OTHER);
+        cs.setString(2, m_username);
+        cs.setString(3, m_password);
+        cs.setString(4, code);
+        cs.execute();
 
-    UUID accountId = (UUID)cs.getObject(1);
+        UUID accountId = (UUID)cs.getObject(1);
+      }
 
-    q = "{ ? = call rl.pwAuthenticate(?, ?) }";
-    cs = m_data.getConnection().prepareCall(q);
+      q = "{ ? = call rl.pwAuthenticate(?, ?) }";
 
-    cs.registerOutParameter (1, Types.BINARY);
-    cs.setString(2, m_username);
-    cs.setString(3, m_password);
-    cs.execute();
+      try (
+        CallableStatement cs = con.prepareCall(q);
+      ) {
+        cs.registerOutParameter (1, Types.BINARY);
+        cs.setString(2, m_username);
+        cs.setString(3, m_password);
+        cs.execute();
 
-    byte[] bytes = cs.getBytes(1);
-    String token = Common.toHex(bytes);
+        byte[] bytes = cs.getBytes(1);
+        String token = Common.toHex(bytes);
 
-    StaticData.put("authToken", token);
-
-    m_data.getConnection().commit();
-
-    StaticData.persist();
+        StaticData.put("authToken", token);
+        StaticData.persist();
+      }
+    }
   }
 
   @Test

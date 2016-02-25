@@ -4,7 +4,7 @@ apply plugin: "war"
 apply plugin: "com.bmuschko.cargo"
 apply plugin: com.recursiveloop.gradle.MyPlugin
 
-def projectRoot = getProjectDir().getAbsolutePath();
+def projectRoot = getProjectDir().getAbsolutePath()
 def servletSpec = "3.0.1"
 
 ext.testVersions = [
@@ -82,6 +82,10 @@ configurations {
     }
   }
 
+  jdbcDriver
+
+  runtime.extendsFrom jdbcDriver
+
   webcommonCompile.extendsFrom compile
 
   integrationTestCompile.extendsFrom testCompile
@@ -89,7 +93,7 @@ configurations {
 }
 
 dependencies {
-  runtime files("lib/postgresql-9.3-1101.jdbc41.jar")
+  jdbcDriver files("lib/postgresql-9.3-1101.jdbc41.jar")
 
   runtime name: "corsFilter"
 
@@ -164,6 +168,11 @@ test {
     html.destination = "$buildDir/reports/unit"
     junitXml.destination = "$buildDir/test-results/unit"
   }
+
+  if (project.hasProperty("debug")) {
+    def port = project.hasProperty("debugPort") ? project.debugPort : 8787
+    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=$port,server=y,suspend=y".tokenize(" ")
+  }
 }
 
 task buildWebcommon(type: Jar) {
@@ -176,6 +185,29 @@ task buildWebcommon(type: Jar) {
 }
 
 task integrationTest(type: Test) {
+  doFirst {
+    URLClassLoader loader = GroovyObject.class.classLoader
+    configurations.jdbcDriver.each {File file ->
+      loader.addURL(file.toURL())
+    }
+
+    def driverName = 'org.postgresql.Driver'
+    groovy.sql.Sql sql = groovy.sql.Sql.newInstance('jdbc:postgresql://localhost:5432/testdb', 'rlwebapp', 'password', driverName)
+
+    sql.execute("DELETE FROM rl.config;")
+    sql.execute("INSERT INTO rl.config (key, value) VALUES ('param1', 'This is param1 from the database');")
+    sql.execute("INSERT INTO rl.config (key, value) VALUES ('param3', 'This is param3 from the database');")
+    sql.execute("INSERT INTO rl.config (key, value) VALUES ('com.recursiveloop.webcommon.ConfigFactoryTest.param6', 'This is param6 from the database');")
+    sql.execute("INSERT INTO rl.config (key, value) VALUES ('ConfigFactoryTest.param7', 'This is param7 from the database');")
+  }
+
+  doLast {
+    def driverName = 'org.postgresql.Driver'
+    groovy.sql.Sql sql = groovy.sql.Sql.newInstance('jdbc:postgresql://localhost:5432/testdb', 'rlwebapp', 'password', driverName)
+
+    sql.execute("DELETE FROM rl.config;")
+  }
+
   description = "Run integration tests."
 
   outputs.upToDateWhen { false }
@@ -185,8 +217,8 @@ task integrationTest(type: Test) {
 
   def jvmArgs = ""
   if (project.hasProperty("debug")) {
-    def port = project.hasProperty("debugPort") ? project.debugPort : 8787;
-    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=$port,server=y,suspend=y";
+    def port = project.hasProperty("debugPort") ? project.debugPort : 8787
+    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=$port,server=y,suspend=y"
   }
   else {
     jvmArgs = "-DDummy"

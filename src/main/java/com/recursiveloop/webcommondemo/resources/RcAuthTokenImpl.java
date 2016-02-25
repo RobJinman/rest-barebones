@@ -1,22 +1,12 @@
-// This file is property of Recursive Loop Ltd.
-//
-// Author: Rob Jinman
-// Web: http://recursiveloop.org
-// Copyright Recursive Loop Ltd 2015
-// Copyright Rob Jinman 2015
-
-
 package com.recursiveloop.webcommondemo.resources;
 
 import com.recursiveloop.webcommondemo.models.UserCredentials;
 import com.recursiveloop.webcommondemo.models.AuthToken;
 import com.recursiveloop.webcommondemo.Authentication;
-import com.recursiveloop.webcommondemo.exceptions.InternalServerException;
 import com.recursiveloop.webcommondemo.exceptions.UnauthorisedException;
-
-import javax.ws.rs.core.Response.Status;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.sql.SQLException;
 import javax.inject.Inject;
 
 
@@ -28,24 +18,20 @@ public class RcAuthTokenImpl implements RcAuthToken {
 
   @Override
   public AuthToken doPost(UserCredentials credentials)
-    throws InternalServerException, UnauthorisedException {
-
-    String token = null;
+    throws SQLException, UnauthorisedException {
 
     try {
-      token = m_auth.authenticate(credentials.getUsername(), credentials.getPassword());
-    }
-    catch (Exception ex) {
-      String errMsg = "Error retrieving auth token";
-      m_logger.log(Level.SEVERE, errMsg, ex);
-      throw new InternalServerException(errMsg, ex);
-    }
+      String token = m_auth.authenticate(credentials.getUsername(), credentials.getPassword());
 
-    if (token == null) {
-      throw new UnauthorisedException();
-    }
-    else {
+      if (token == null) {
+        throw new UnauthorisedException();
+      }
+
       return new AuthToken(token);
+    }
+    catch (SQLException ex) {
+      m_logger.log(Level.SEVERE, "Error retrieving auth token", ex);
+      throw ex;
     }
   }
 }

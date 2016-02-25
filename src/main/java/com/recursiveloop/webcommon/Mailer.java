@@ -1,15 +1,6 @@
-// This file is property of Recursive Loop Ltd.
-//
-// Author: Rob Jinman
-// Web: http://recursiveloop.org
-// Copyright Recursive Loop Ltd 2015
-// Copyright Rob Jinman 2015
-
-
 package com.recursiveloop.webcommon;
 
-import com.recursiveloop.webcommon.annotations.Config;
-
+import com.recursiveloop.webcommon.config.ConfigParam;
 import java.util.Properties;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -26,29 +17,6 @@ import java.util.logging.Level;
 
 @ApplicationScoped
 public class Mailer {
-  private static final Logger m_logger = Logger.getLogger(Mailer.class.getName());
-
-  @Inject @Config("address")
-  String m_addr;
-
-  @Inject @Config("password")
-  String m_pw;
-
-  @Inject @Config("smtp.auth")
-  String m_smtpAuth;
-
-  @Inject @Config("smtp.startssl.enable")
-  String m_smtpStartsslEnable;
-
-  @Inject @Config("smtp.starttls.enable")
-  String m_smtpStarttlsEnable;
-
-  @Inject @Config("smtp.host")
-  String m_smtpHost;
-
-  @Inject @Config("smtp.port")
-  String m_smtpPort;
-
   public void sendToSelf(String sender, String subject, String body) throws MessagingException {
     Message message = new MimeMessage(getSession());
     message.setFrom(new InternetAddress(m_addr));
@@ -69,18 +37,56 @@ public class Mailer {
     Transport.send(message);
   }
 
+  private static final Logger m_logger = Logger.getLogger(Mailer.class.getName());
+
+  @Inject @ConfigParam(key="address")
+  String m_addr;
+
+  @Inject @ConfigParam(key="password")
+  String m_pw;
+
+  @Inject @ConfigParam(key="smtp.auth")
+  String m_smtpAuth;
+
+  @Inject @ConfigParam(key="smtp.startssl.enable")
+  String m_smtpStartsslEnable;
+
+  @Inject @ConfigParam(key="smtp.starttls.enable")
+  String m_smtpStarttlsEnable;
+
+  @Inject @ConfigParam(key="smtp.host")
+  String m_smtpHost;
+
+  @Inject @ConfigParam(key="smtp.port")
+  String m_smtpPort;
+
   private Session getSession() {
     Properties props = new Properties();
 
-    props.setProperty("mail.smtp.auth", m_smtpAuth);
-    props.setProperty("mail.smtp.host", m_smtpHost);
-    props.setProperty("mail.smtp.port", m_smtpPort);
-    props.setProperty("mail.pop3.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-    props.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-    props.setProperty("mail.smtp.socketFactory.fallback", "false");
-    props.setProperty("mail.smtp.socketFactory.port", m_smtpPort);
-    props.setProperty("mail.smtp.starttls.enable", m_smtpStarttlsEnable);
-    props.setProperty("mail.smtp.startssl.enable", m_smtpStartsslEnable);
+    if (m_smtpAuth != null) {
+      props.setProperty("mail.smtp.auth", m_smtpAuth);
+    }
+
+    if (m_smtpHost != null) {
+      props.setProperty("mail.smtp.host", m_smtpHost);
+    }
+
+    if (m_smtpPort != null) {
+      props.setProperty("mail.smtp.port", m_smtpPort);
+//      props.setProperty("mail.smtp.socketFactory.port", m_smtpPort);
+    }
+
+//    props.setProperty("mail.pop3.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+//    props.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+//    props.setProperty("mail.smtp.socketFactory.fallback", "false");
+
+    if (m_smtpStarttlsEnable != null) {
+      props.setProperty("mail.smtp.starttls.enable", m_smtpStarttlsEnable);
+    }
+
+    if (m_smtpStartsslEnable != null) {
+      props.setProperty("mail.smtp.startssl.enable", m_smtpStartsslEnable);
+    }
 
     return Session.getInstance(props, new javax.mail.Authenticator() {
       @Override

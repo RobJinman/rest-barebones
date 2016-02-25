@@ -1,11 +1,3 @@
-// This file is property of Recursive Loop Ltd.
-//
-// Author: Rob Jinman
-// Web: http://recursiveloop.org
-// Copyright Recursive Loop Ltd 2015
-// Copyright Rob Jinman 2015
-
-
 package com.recursiveloop.webcommondemo;
 
 import com.recursiveloop.webcommondemo.resources.RcAccount;
@@ -14,8 +6,6 @@ import com.recursiveloop.webcommondemo.exceptions.InternalServerException;
 import com.recursiveloop.webcommondemo.exceptions.UnauthorisedException;
 import com.recursiveloop.webcommon.test.TestSuite;
 import com.recursiveloop.webcommon.test.StaticData;
-import com.recursiveloop.webcommon.DataConnection;
-
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.junit.InSequence;
@@ -37,6 +27,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.NotAuthorizedException;
+import javax.sql.DataSource;
+import javax.annotation.Resource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -55,7 +47,7 @@ public class RcAccountTest {
     return ShrinkWrap.create(WebArchive.class, "RcAccountTest.war")
       .addPackage("com/recursiveloop/webcommon/test")
       .addPackage("com/recursiveloop/webcommon")
-      .addPackage("com/recursiveloop/webcommon/annotations")
+      .addPackage("com/recursiveloop/webcommon/config")
       .addPackage("com/recursiveloop/webcommondemo")
       .addPackage("com/recursiveloop/webcommondemo/models")
       .addPackage("com/recursiveloop/webcommondemo/resources")
@@ -69,15 +61,15 @@ public class RcAccountTest {
   @Inject
   TestSuite m_testSuite;
 
-  @Inject
-  DataConnection m_data;
+  @Resource(lookup="java:comp/env/jdbc/maindb")
+  DataSource m_data;
 
   @Test
   @InSequence(1)
   public void connection_ok() {
     System.out.println("**((CONNECTION_OK))**");
 
-    Assert.assertTrue(m_data.isGood());
+    Assert.assertNotNull(m_data);
   }
 
   private static String m_email = "martha123@website.com";
@@ -92,30 +84,41 @@ public class RcAccountTest {
     m_testSuite.prepDB();
 
     String q = "{ ? = call rl.registeruser(?) }";
-    CallableStatement cs = m_data.getConnection().prepareCall(q);
 
-    cs.registerOutParameter (1, Types.VARCHAR);
-    cs.setString(2, m_email);
-    cs.execute();
+    try (
+      Connection con = m_data.getConnection();
+      Statement st = con.createStatement();
+    ) {
+      String code = null;
 
-    String code = cs.getString(1);
-    StaticData.put("code", code);
-    m_data.getConnection().commit();
+      try (
+        CallableStatement cs = con.prepareCall(q);
+      ) {
+        cs.registerOutParameter (1, Types.VARCHAR);
+        cs.setString(2, m_email);
+        cs.execute();
 
-    Statement st = m_data.getConnection().createStatement();
-    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+        code = cs.getString(1);
+        StaticData.put("code", code);
+      }
 
-    Assert.assertTrue(rs.next());
-    Assert.assertEquals(m_email, rs.getString("email"));
-    Assert.assertEquals(code, rs.getString("code"));
-    Assert.assertFalse(rs.next());
-    rs.close();
+      try (
+        ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+      ) {
+        Assert.assertTrue(rs.next());
+        Assert.assertEquals(m_email, rs.getString("email"));
+        Assert.assertEquals(code, rs.getString("code"));
+        Assert.assertFalse(rs.next());
+      }
 
-    rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
-    Assert.assertFalse(rs.next());
-    rs.close();
+      try (
+        ResultSet rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
+      ) {
+        Assert.assertFalse(rs.next());
+      }
 
-    StaticData.persist();
+      StaticData.persist();
+    }
   }
 
   @Test
@@ -123,7 +126,7 @@ public class RcAccountTest {
   @RunAsClient
   @Consumes(MediaType.APPLICATION_JSON)
   public void with_incorrect_code_1(@ArquillianResteasyResource("rest") RcAccount rcAccount)
-    throws InternalServerException, UnauthorisedException {
+    throws SQLException, UnauthorisedException {
 
     System.out.println("**((WITH_INCORRECT_CODE))**");
 
@@ -141,19 +144,25 @@ public class RcAccountTest {
     StaticData.load();
     String code = StaticData.get("code");
 
-    Statement st = m_data.getConnection().createStatement();
-    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+    try (
+      Connection con = m_data.getConnection();
+      Statement st = con.createStatement();
+    ) {
+      try (
+        ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+      ) {
+        Assert.assertTrue(rs.next());
+        Assert.assertEquals(m_email, rs.getString("email"));
+        Assert.assertEquals(code, rs.getString("code"));
+        Assert.assertFalse(rs.next());
+      }
 
-    Assert.assertTrue(rs.next());
-    Assert.assertEquals(m_email, rs.getString("email"));
-    Assert.assertEquals(code, rs.getString("code"));
-    Assert.assertFalse(rs.next());
-    rs.close();
-
-    rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
-
-    Assert.assertFalse(rs.next());
-    rs.close();
+      try (
+        ResultSet rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
+      ) {
+        Assert.assertFalse(rs.next());
+      }
+    }
   }
 
   @Test
@@ -161,7 +170,7 @@ public class RcAccountTest {
   @RunAsClient
   @Consumes(MediaType.APPLICATION_JSON)
   public void with_correct_code_1(@ArquillianResteasyResource("rest") RcAccount rcAccount)
-    throws InternalServerException, UnauthorisedException, IOException {
+    throws SQLException, UnauthorisedException, IOException {
 
     System.out.println("**((WITH_CORRECT_CODE))**");
 
@@ -180,20 +189,25 @@ public class RcAccountTest {
   @Test
   @InSequence(6)
   public void with_correct_code_2() throws SQLException {
-    Statement st = m_data.getConnection().createStatement();
-    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+    try (
+      Connection con = m_data.getConnection();
+      Statement st = con.createStatement();
+    ) {
+      try (
+        ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = '" + m_email + "'");
+      ) {
+        Assert.assertFalse(rs.next());
+      }
 
-    Assert.assertFalse(rs.next());
-    rs.close();
-
-    rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
-
-    Assert.assertTrue(rs.next());
-    Assert.assertEquals(m_email, rs.getString("email"));
-    Assert.assertEquals(m_username, rs.getString("username"));
-    Assert.assertFalse(rs.next());
-
-    rs.close();
+      try (
+        ResultSet rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = '" + m_email + "'");
+      ) {
+        Assert.assertTrue(rs.next());
+        Assert.assertEquals(m_email, rs.getString("email"));
+        Assert.assertEquals(m_username, rs.getString("username"));
+        Assert.assertFalse(rs.next());
+      }
+    }
   }
 
   @Test

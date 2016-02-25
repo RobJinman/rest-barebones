@@ -1,23 +1,14 @@
-// This file is property of Recursive Loop Ltd.
-//
-// Author: Rob Jinman
-// Web: http://recursiveloop.org
-// Copyright Recursive Loop Ltd 2015
-// Copyright Rob Jinman 2015
-
-
 package com.recursiveloop.webcommondemo.resources;
 
 import com.recursiveloop.webcommondemo.models.RestrictedResource;
-import com.recursiveloop.webcommondemo.exceptions.InternalServerException;
 import com.recursiveloop.webcommondemo.exceptions.UnauthorisedException;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.HeaderParam;
+import java.sql.SQLException;
 
 
 @Path("/restrictedresource")
@@ -26,5 +17,5 @@ import javax.ws.rs.HeaderParam;
 public interface RcRestrictedResource {
   @GET
   public RestrictedResource doGet(@HeaderParam("X-Auth-Token") String token, @HeaderParam("X-Username") String username)
-    throws InternalServerException, UnauthorisedException;
+    throws SQLException, UnauthorisedException;
 }

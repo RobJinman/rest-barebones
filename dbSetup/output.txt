@@ -69,3 +69,124 @@ CREATE FUNCTION
 Creating tables ...
 INSERT 0 1
 INSERT 0 1
+Mon Feb 22 13:52:46 GMT 2016
+Creating user 'rlwebapp' with password 'password' ...
+CREATE ROLE
+Creating database 'maindb' ...
+Creating extensions ...
+CREATE EXTENSION
+Creating tables ...
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+Creating tables ...
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+Creating tables ...
+INSERT 0 1
+INSERT 0 1
+Creating database 'testdb' ...
+Creating extensions ...
+CREATE EXTENSION
+Creating tables ...
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+Creating tables ...
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+Creating tables ...
+INSERT 0 1
+INSERT 0 1
+Mon Feb 22 14:14:10 GMT 2016
+Creating user 'rlwebapp' with password 'password' ...
+CREATE ROLE
+Creating database 'maindb' ...
+Creating extensions ...
+CREATE EXTENSION
+Creating tables ...
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+Creating tables ...
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+Creating tables ...
+INSERT 0 1
+INSERT 0 1
+Creating database 'testdb' ...
+Creating extensions ...
+CREATE EXTENSION
+Creating tables ...
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+Creating tables ...
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+Creating tables ...
+INSERT 0 1
+INSERT 0 1
+Tue Feb 23 20:40:43 GMT 2016
+Creating user 'rlwebapp' with password 'password' ...
+CREATE ROLE
+Creating database 'maindb' ...
+Creating extensions ...
+CREATE EXTENSION
+Creating tables ...
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+Creating tables ...
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+Creating tables ...
+INSERT 0 1
+INSERT 0 1
+Creating database 'testdb' ...
+Creating extensions ...
+CREATE EXTENSION
+Creating tables ...
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+Creating tables ...
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+Creating tables ...
+INSERT 0 1
+INSERT 0 1

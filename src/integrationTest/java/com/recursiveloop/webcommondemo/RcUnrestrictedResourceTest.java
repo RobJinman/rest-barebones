@@ -32,7 +32,7 @@ public class RcUnrestrictedResourceTest {
     return ShrinkWrap.create(WebArchive.class, "RcUnrestrictedResourceTest.war")
       .addPackage("com/recursiveloop/webcommon/test")
       .addPackage("com/recursiveloop/webcommon")
-      .addPackage("com/recursiveloop/webcommon/annotations")
+      .addPackage("com/recursiveloop/webcommon/config")
       .addPackage("com/recursiveloop/webcommondemo")
       .addPackage("com/recursiveloop/webcommondemo/models")
       .addPackage("com/recursiveloop/webcommondemo/resources")

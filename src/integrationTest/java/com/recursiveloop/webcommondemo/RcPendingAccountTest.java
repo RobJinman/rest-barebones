@@ -1,11 +1,3 @@
-// This file is property of Recursive Loop Ltd.
-//
-// Author: Rob Jinman
-// Web: http://recursiveloop.org
-// Copyright Recursive Loop Ltd 2015
-// Copyright Rob Jinman 2015
-
-
 package com.recursiveloop.webcommondemo;
 
 import com.recursiveloop.webcommondemo.resources.RcPendingAccount;
@@ -16,9 +8,6 @@ import com.recursiveloop.webcommondemo.exceptions.BadRequestException;
 import com.recursiveloop.webcommon.test.TestSuite;
 import com.recursiveloop.webcommon.test.StaticData;
 import com.recursiveloop.webcommon.test.mocks.MailerProducer;
-import com.recursiveloop.webcommon.DataConnection;
-
-import javax.inject.Inject;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.junit.InSequence;
@@ -36,10 +25,12 @@ import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
-import java.net.URL;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+import javax.inject.Inject;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -47,6 +38,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.CallableStatement;
 import java.util.UUID;
+import java.net.URL;
 import java.io.IOException;
 
 
@@ -58,7 +50,7 @@ public class RcPendingAccountTest {
       .addPackage("com/recursiveloop/webcommon/test")
       .addPackage("com/recursiveloop/webcommon/test/mocks")
       .addPackage("com/recursiveloop/webcommon")
-      .addPackage("com/recursiveloop/webcommon/annotations")
+      .addPackage("com/recursiveloop/webcommon/config")
       .addPackage("com/recursiveloop/webcommondemo")
       .addPackage("com/recursiveloop/webcommondemo/models")
       .addPackage("com/recursiveloop/webcommondemo/resources")
@@ -83,15 +75,15 @@ public class RcPendingAccountTest {
   @Inject
   TestSuite m_testSuite;
 
-  @Inject
-  DataConnection m_data;
+  @Resource(lookup="java:comp/env/jdbc/maindb")
+  DataSource m_data;
 
   @Test
   @InSequence(1)
   public void connection_ok() {
     System.out.println("**((CONNECTION_OK))**");
 
-    Assert.assertTrue(m_data.isGood());
+    Assert.assertNotNull(m_data);
   }
 
   private static String m_email = "martha123@website.com";
@@ -102,10 +94,11 @@ public class RcPendingAccountTest {
     System.out.println("**((SETUP))**");
     m_testSuite.prepDB();
 
-    Statement st = m_data.getConnection().createStatement();
-    st.executeUpdate("INSERT INTO rl.account (account_id, email, username, hash) VALUES (UUID_GENERATE_V4(), 'alreadytaken@website.com', 'joebloggs', 'abc')");
-
-    m_data.getConnection().commit();
+    try (
+      Statement st = m_data.getConnection().createStatement();
+    ) {
+      st.executeUpdate("INSERT INTO rl.account (account_id, email, username, hash) VALUES (UUID_GENERATE_V4(), 'alreadytaken@website.com', 'joebloggs', 'abc')");
+    }
   }
 
   @Test
@@ -113,7 +106,7 @@ public class RcPendingAccountTest {
   @RunAsClient
   @Consumes(MediaType.APPLICATION_JSON)
   public void with_taken_email_1(@ArquillianResteasyResource("rest") RcPendingAccount rcPendingAccount)
-    throws InternalServerException, ConflictException, BadRequestException {
+    throws SQLException, InternalServerException, ConflictException, BadRequestException {
 
     System.out.println("**((WITH_TAKEN_EMAIL))**");
 
@@ -127,10 +120,12 @@ public class RcPendingAccountTest {
   @Test
   @InSequence(4)
   public void with_taken_email_2() throws SQLException, IOException {
-    Statement st = m_data.getConnection().createStatement();
-    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = 'alreadytaken@website.com'");
-    Assert.assertFalse(rs.next());
-    rs.close();
+    try (
+      Statement st = m_data.getConnection().createStatement();
+      ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = 'alreadytaken@website.com'");
+    ) {
+      Assert.assertFalse(rs.next());
+    }
   }
 
   @Test
@@ -138,7 +133,7 @@ public class RcPendingAccountTest {
   @RunAsClient
   @Consumes(MediaType.APPLICATION_JSON)
   public void with_good_email_1(@ArquillianResteasyResource("rest") RcPendingAccount rcPendingAccount)
-    throws InternalServerException, ConflictException, BadRequestException {
+    throws SQLException, InternalServerException, ConflictException, BadRequestException {
 
     System.out.println("**((WITH_GOOD_EMAIL))**");
 
@@ -153,18 +148,25 @@ public class RcPendingAccountTest {
   @Test
   @InSequence(6)
   public void with_good_email_2() throws SQLException, IOException {
-    Statement st = m_data.getConnection().createStatement();
-    ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = 'some_email@website.com'");
+    try (
+      Connection con = m_data.getConnection();
+      Statement st = con.createStatement();
+    ) {
+      try (
+        ResultSet rs = st.executeQuery("SELECT code, email FROM rl.pending_account WHERE email = 'some_email@website.com'");
+      ) {
+        Assert.assertTrue(rs.next());
+        Assert.assertEquals("some_email@website.com", rs.getString("email"));
+        Assert.assertNotNull(rs.getString("code"));
+        Assert.assertFalse(rs.next());
+      }
 
-    Assert.assertTrue(rs.next());
-    Assert.assertEquals("some_email@website.com", rs.getString("email"));
-    Assert.assertNotNull(rs.getString("code"));
-    Assert.assertFalse(rs.next());
-    rs.close();
-
-    rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = 'some_email@website.com'");
-    Assert.assertFalse(rs.next());
-    rs.close();
+      try (
+        ResultSet rs = st.executeQuery("SELECT email, username FROM rl.account WHERE email = 'some_email@website.com'");
+      ) {
+        Assert.assertFalse(rs.next());
+      }
+    }
   }
 
   @Test
