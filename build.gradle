@@ -175,6 +175,10 @@ test {
   }
 }
 
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.6'
+}
+
 task buildWebcommon(type: Jar) {
   from sourceSets.webcommon.output
 
