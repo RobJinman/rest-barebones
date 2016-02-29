@@ -4,6 +4,8 @@ apply plugin: "war"
 apply plugin: "com.bmuschko.cargo"
 apply plugin: com.recursiveloop.gradle.MyPlugin
 
+version = '0.0.1-SNAPSHOT'
+
 def projectRoot = getProjectDir().getAbsolutePath()
 def servletSpec = "3.0.1"
 
