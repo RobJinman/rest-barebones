@@ -35,11 +35,7 @@ public class ConfigInjectionManager implements Serializable {
       m_settings.add(settings);
     }
 
-    Collections.sort(m_settings, new Comparator<ApplicationConfig>() {
-      public int compare(ApplicationConfig a, ApplicationConfig b) {
-        return b.precedence() - a.precedence();
-      }
-    });
+    m_settings.sort((ApplicationConfig a, ApplicationConfig b) -> b.precedence() - a.precedence());
   }
 
   @Produces @ConfigParam
