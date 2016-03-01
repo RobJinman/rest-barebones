@@ -4,17 +4,42 @@ apply plugin: "war"
 apply plugin: "com.bmuschko.cargo"
 apply plugin: com.recursiveloop.gradle.MyPlugin
 
-version = '0.0.2-SNAPSHOT'
+class ProjectVersion {
+  Integer major
+  Integer minor
+  Integer patch
+  Boolean release
 
-def projectRoot = getProjectDir().getAbsolutePath()
+  ProjectVersion(Integer major, Integer minor, Integer patch) {
+    this.major = major
+    this.minor = minor
+    this.patch = patch
+    this.release = Boolean.FALSE
+  }
 
-ext.testVersions = [
-  javaee                  : '7.0',
-  wildfly                 : '1.0.2.Final',
-  junit                   : '4.11',
-  arquillian              : '1.1.11.Final',
-  shrinkWrapResolverGradle: '2.2.2'
-]
+  ProjectVersion(Integer major, Integer minor, Integer patch, Boolean release) {
+    this(major, minor, patch)
+    this.release = release
+  }
+
+  @Override
+  String toString() {
+    "$major.$minor.$patch${release ? '' : '-SNAPSHOT'}"
+  }
+}
+
+ext {
+  projectRoot = getProjectDir().getAbsolutePath()
+  versionFile = file("version.properties")
+
+  testVersions = [
+    javaee                  : "7.0",
+    wildfly                 : "1.0.2.Final",
+    junit                   : "4.11",
+    arquillian              : "1.1.11.Final",
+    shrinkWrapResolverGradle: "2.2.2"
+  ]
+}
 
 buildscript {
   repositories {
@@ -23,7 +48,7 @@ buildscript {
   }
 
   dependencies {
-    classpath "com.bmuschko:gradle-cargo-plugin:2.0.3"
+    classpath "com.bmuschko:gradle-cargo-plugin:2.2.1"
   }
 }
 
@@ -31,9 +56,9 @@ repositories {
   jcenter()
   mavenCentral()
 
-  maven { url 'http://repository.jboss.org/nexus/content/groups/public' }
-  maven { url 'http://repository.jboss.org/nexus/content/repositories/deprecated' }
-  maven { url 'http://repo.jfrog.org/artifactory/repo' }
+  maven { url "http://repository.jboss.org/nexus/content/groups/public" }
+  maven { url "http://repository.jboss.org/nexus/content/repositories/deprecated" }
+  maven { url "http://repo.jfrog.org/artifactory/repo" }
 
   flatDir {
     dirs(libs.split(","))
@@ -177,7 +202,30 @@ test {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.6'
+  gradleVersion = "2.6"
+}
+
+task loadVersion(group: "Versioning") {
+  project.version = readVersion()
+}
+
+ProjectVersion readVersion() {
+  if (!versionFile.exists()) {
+    throw new GradleException("Required version file does not exist: $versionFile.canonicalPath")
+  }
+
+  Properties props = new Properties()
+
+  versionFile.withInputStream { stream ->
+    props.load(stream)
+  }
+
+  new ProjectVersion(props.major.toInteger(), props.minor.toInteger(),
+    props.patch.toInteger(), props.release.toBoolean())
+}
+
+task printVersion(group: "Versioning") << {
+  logger.quiet "Version: $version"
 }
 
 task buildWebcommon(type: Jar) {
@@ -189,30 +237,30 @@ task buildWebcommon(type: Jar) {
   }
 }
 
-task integrationTest(type: Test) {
-  doFirst {
-    URLClassLoader loader = GroovyObject.class.classLoader
-    configurations.jdbcDriver.each {File file ->
-      loader.addURL(file.toURL())
-    }
-
-    def driverName = 'org.postgresql.Driver'
-    groovy.sql.Sql sql = groovy.sql.Sql.newInstance('jdbc:postgresql://localhost:5432/testdb', 'rlwebapp', 'password', driverName)
-
-    sql.execute("DELETE FROM rl.config;")
-    sql.execute("INSERT INTO rl.config (key, value) VALUES ('param1', 'This is param1 from the database');")
-    sql.execute("INSERT INTO rl.config (key, value) VALUES ('param3', 'This is param3 from the database');")
-    sql.execute("INSERT INTO rl.config (key, value) VALUES ('com.recursiveloop.webcommon.ConfigFactoryTest.param6', 'This is param6 from the database');")
-    sql.execute("INSERT INTO rl.config (key, value) VALUES ('ConfigFactoryTest.param7', 'This is param7 from the database');")
+task integrationTestSetup(group: "Integration Test") << {
+  URLClassLoader loader = GroovyObject.class.classLoader
+  configurations.jdbcDriver.each {File file ->
+    loader.addURL(file.toURL())
   }
 
-  doLast {
-    def driverName = 'org.postgresql.Driver'
-    groovy.sql.Sql sql = groovy.sql.Sql.newInstance('jdbc:postgresql://localhost:5432/testdb', 'rlwebapp', 'password', driverName)
+  def driverName = "org.postgresql.Driver"
+  groovy.sql.Sql sql = groovy.sql.Sql.newInstance("jdbc:postgresql://localhost:5432/testdb", "rlwebapp", "password", driverName)
 
-    sql.execute("DELETE FROM rl.config;")
-  }
+  sql.execute("DELETE FROM rl.config;")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES ('param1', 'This is param1 from the database');")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES ('param3', 'This is param3 from the database');")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES ('com.recursiveloop.webcommon.ConfigFactoryTest.param6', 'This is param6 from the database');")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES ('ConfigFactoryTest.param7', 'This is param7 from the database');")
+}
 
+task integrationTestTearDown(group: "Integration Test") << {
+  def driverName = "org.postgresql.Driver"
+  groovy.sql.Sql sql = groovy.sql.Sql.newInstance("jdbc:postgresql://localhost:5432/testdb", "rlwebapp", "password", driverName)
+
+  sql.execute("DELETE FROM rl.config;")
+}
+
+task integrationTest(type: Test, group: "Integration Test") {
   description = "Run integration tests."
 
   outputs.upToDateWhen { false }
@@ -242,6 +290,9 @@ task integrationTest(type: Test) {
     junitXml.destination = "$buildDir/test-results/integration"
   }
 }
+
+integrationTest.dependsOn integrationTestSetup
+integrationTest.finalizedBy integrationTestTearDown
 
 cargoRunLocal.dependsOn assemble
 assemble.dependsOn buildWebcommon
