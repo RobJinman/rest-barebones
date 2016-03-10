@@ -1,67 +1,107 @@
-import com.recursiveloop.gradle.tasks.*
-
 apply plugin: "war"
+apply plugin: "distribution"
+apply plugin: "maven-publish"
 apply plugin: "com.bmuschko.cargo"
-apply plugin: com.recursiveloop.gradle.MyPlugin
-
-class ProjectVersion {
-  Integer major
-  Integer minor
-  Integer patch
-  Boolean release
-
-  ProjectVersion(Integer major, Integer minor, Integer patch) {
-    this.major = major
-    this.minor = minor
-    this.patch = patch
-    this.release = Boolean.FALSE
-  }
-
-  ProjectVersion(Integer major, Integer minor, Integer patch, Boolean release) {
-    this(major, minor, patch)
-    this.release = release
-  }
-
-  @Override
-  String toString() {
-    "$major.$minor.$patch${release ? '' : '-SNAPSHOT'}"
-  }
-}
+//apply plugin: "com.recursiveloop.buildcommon"
 
 ext {
   projectRoot = getProjectDir().getAbsolutePath()
-  versionFile = file("version.properties")
 
-  testVersions = [
-    javaee                  : "7.0",
-    wildfly                 : "1.0.2.Final",
-    junit                   : "4.11",
-    arquillian              : "1.1.11.Final",
-    shrinkWrapResolverGradle: "2.2.2"
+  cargoVersion = "1.4.18"
+
+  tomcat = [
+    cargoId: "tomee1x",
+    downloadUrl: "http://mirrors.ukfast.co.uk/sites/ftp.apache.org/tomee/tomee-1.7.4/apache-tomee-1.7.4-plus.zip",
+    absInstallationRoot: "$projectRoot/containers/apache-tomee-1.7.4-plus/apache-tomee-plus-1.7.4/",
+    configFile: "containerConfig/tomcat/context.xml",
+    configFileDest: "conf",
+    arquillianDeps: [
+      "org.apache.openejb:arquillian-tomee-embedded:1.7.4",
+      "org.apache.openejb:tomee-embedded:1.7.4",
+      "org.apache.openejb:tomee-webservices:1.7.4",
+      "org.apache.openejb:tomee-jaxrs:1.7.1"
+    ]
   ]
+
+  wildfly9 = [
+    cargoId: "wildfly9x",
+    downloadUrl: "http://download.jboss.org/wildfly/9.0.2.Final/wildfly-9.0.2.Final.zip",
+    absInstallationRoot: "$projectRoot/build/containers/wildfly-9.0.2.Final/wildfly-9.0.2.Final/",
+    configFile: "containerConfig/wildfly9/standalone.xml",
+    configFileDest: "configuration",
+    arquillianDeps: [
+      "org.wildfly.arquillian:wildfly-arquillian-container-managed:1.0.2.Final"
+    ]
+  ]
+
+  wildfly10 = [
+    cargoId: "wildfly10x",
+    downloadUrl: "http://download.jboss.org/wildfly/10.0.0.Final/wildfly-10.0.0.Final.zip",
+    absInstallationRoot: "$projectRoot/build/containers/wildfly-10.0.0.Final/wildfly-10.0.0.Final/",
+    configFile: "containerConfig/wildfly10/standalone.xml",
+    configFileDest: "configuration",
+    arquillianDeps: [
+      "org.wildfly.arquillian:wildfly-arquillian-container-managed:1.0.2.Final"
+    ]
+  ]
+
+  glassfish = [
+    cargoId: "glassfish4x",
+    downloadUrl: "http://download.java.net/glassfish/4.1.1/release/glassfish-4.1.1.zip",
+    absInstallationRoot: "$projectRoot/build/containers/glassfish-4.1.1/glassfish4/",
+//    configFile: "containerConfig/glassfish/domain.xml",
+    configFileDest: "cargo-domain/config",
+    arquillianDeps: [
+      "org.jboss.arquillian.container:arquillian-glassfish-managed-3.1:1.0.0.CR3"
+    ]
+  ]
+
+  containerConfig = glassfish
+
+  artifactBaseName = "webcommon"
+  artifactorySnapshotRepoUrl = "$artifactoryBaseUrl/libs-snapshot-local"
+  artifactoryReleaseRepoUrl = "$artifactoryBaseUrl/libs-release-local"
 }
 
 buildscript {
+  def buildcommonVersion = "0.1-SNAPSHOT"
+  def cargoPluginVersion = "2.2.1"
+  def artifactorySnapshotRepoUrl = "$artifactoryBaseUrl/libs-snapshot-local"
+  def artifactoryReleaseRepoUrl = "$artifactoryBaseUrl/libs-release-local"
+
   repositories {
     jcenter()
     mavenCentral()
+    maven {
+      name "artifactorySnapshot"
+      url artifactorySnapshotRepoUrl
+    }
+    maven {
+      name "artifactoryRelease"
+      url artifactoryReleaseRepoUrl
+    }
   }
 
   dependencies {
-    classpath "com.bmuschko:gradle-cargo-plugin:2.2.1"
+    classpath "com.bmuschko:gradle-cargo-plugin:$cargoPluginVersion"
+    classpath "com.recursiveloop.gradle:buildcommon:$buildcommonVersion"
   }
 }
 
 repositories {
   jcenter()
   mavenCentral()
-
-  maven { url "http://repository.jboss.org/nexus/content/groups/public" }
-  maven { url "http://repository.jboss.org/nexus/content/repositories/deprecated" }
-  maven { url "http://repo.jfrog.org/artifactory/repo" }
-
-  flatDir {
-    dirs(libs.split(","))
+  maven {
+    name "arquillian"
+    url "http://repository.jboss.org/nexus/content/groups/public"
+  }
+  maven {
+    name "artifactorySnapshot"
+    url artifactorySnapshotRepoUrl
+  }
+  maven {
+    name "artifactoryRelease"
+    url artifactoryReleaseRepoUrl
   }
 }
 
@@ -110,8 +150,6 @@ configurations {
 
   jdbcDriver
 
-  runtime.extendsFrom jdbcDriver
-
   webcommonCompile.extendsFrom compile
 
   integrationTestCompile.extendsFrom testCompile
@@ -119,26 +157,25 @@ configurations {
 }
 
 dependencies {
-  jdbcDriver files("lib/postgresql-9.3-1101.jdbc41.jar")
+  jdbcDriver files("lib/postgresql-9.4.1208.jar")
 
-  runtime name: "corsFilter"
+  runtime "com.recursiveloop:corsfilter:1.0.+"
 
   providedCompile "javax:javaee-api:7.0"
 
   testCompile "org.mockito:mockito-core:1.10.19",
-    "junit:junit:${testVersions.junit}"
+    "junit:junit:4.11"
 
-  integrationTestCompile "org.jboss.arquillian.junit:arquillian-junit-container:${testVersions.arquillian}",
-    "org.jboss.arquillian.protocol:arquillian-protocol-servlet:${testVersions.arquillian}",
-    "org.wildfly.arquillian:wildfly-arquillian-container-managed:${testVersions.wildfly}",
-    "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-gradle-depchain:${testVersions.shrinkWrapResolverGradle}",
+  integrationTestCompile "org.jboss.arquillian.junit:arquillian-junit-container:1.1.11.Final",
+    "org.jboss.arquillian.protocol:arquillian-protocol-servlet:1.1.11.Final",
+    "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-gradle-depchain:2.2.2",
     "org.jboss.arquillian.extension:arquillian-rest-client-impl-3x:1.0.0.Alpha3",
     "org.jboss.arquillian.protocol:arquillian-protocol-servlet:1.1.7.Final",
     "org.jboss.resteasy:resteasy-jackson-provider:3.0.10.Final",
     "org.mockito:mockito-core:1.10.19",
     "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain:2.1.1"
+  integrationTestCompile containerConfig.arquillianDeps
 
-  def cargoVersion = "1.4.18"
   cargo "org.codehaus.cargo:cargo-core-uberjar:$cargoVersion",
     "org.codehaus.cargo:cargo-ant:$cargoVersion"
 }
@@ -146,28 +183,83 @@ dependencies {
 tasks.withType(JavaCompile) {
   options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 }
+/*
+versions {
+  versionFile = file("version.properties")
+}*/
 
 cargo {
-  containerId = "wildfly10x"
+  containerId = containerConfig.cargoId
   port = 9090
 
   deployable {
-    context = ""
+    context = "/"
   }
 
   local {
     outputFile = file("build/output.log")
+    logFile = file("build/log.log")
     logLevel = "high"
-    timeout = 120000
+    timeout = 240000
+
+    if (containerConfig.configFile) {
+      configFile {
+        file = file(containerConfig.configFile)
+        toDir = containerConfig.configFileDest
+      }
+    }
+    else {
+      containerProperties {
+        property "cargo.datasource.datasource1",
+          "cargo.datasource.url=jdbc:postgresql://localhost:5432/maindb|" +
+          "cargo.datasource.driver=org.postgresql.Driver|" +
+          "cargo.datasource.jndi=jdbc/maindb|" +
+          "cargo.datasource.username=rlwebapp|" +
+          "cargo.datasource.password=password"
+
+        property "cargo.datasource.datasource2",
+          "cargo.datasource.url=jdbc:postgresql://localhost:5432/testdb|" +
+          "cargo.datasource.driver=org.postgresql.Driver|" +
+          "cargo.datasource.jndi=jdbc/testdb|" +
+          "cargo.datasource.username=rlwebapp|" +
+          "cargo.datasource.password=password"
+
+        property "cargo.resource.resource1",
+          "cargo.resource.name=java:global/configTable|" +
+          "cargo.resource.type=java.lang.CharSequence|"
+          "cargo.resource.class=java.lang.String|" +
+          "cargo.resource.parameters=java:comp/env/jdbc/maindb"
+
+        property "cargo.resource.resource2",
+          "cargo.resource.name=java:global/configDatabase|" +
+          "cargo.resource.type=java.lang.CharSequence|"
+          "cargo.resource.class=java.lang.String|" +
+          "cargo.resource.parameters=rl.config"
+
+        property "cargo.resource.resource3",
+          "cargo.resource.name=java:global/configKeyColumn|" +
+          "cargo.resource.type=java.lang.CharSequence|"
+          "cargo.resource.class=java.lang.String|" +
+          "cargo.resource.parameters=key"
+
+        property "cargo.resource.resource4",
+          "cargo.resource.name=java:global/configValueColumn|" +
+          "cargo.resource.type=java.lang.CharSequence|"
+          "cargo.resource.class=java.lang.String|" +
+          "cargo.resource.parameters=value"
+      }
+    }
+
+    extraClasspath = files("lib/postgresql-9.4.1208.jar") // TODO
 
     installer {
-      installUrl = "http://download.jboss.org/wildfly/8.2.0.Final/wildfly-10.0.0.Final.zip"
+      installUrl = containerConfig.downloadUrl
       downloadDir = file("$buildDir/download")
-      extractDir = file("containers")
+      extractDir = file("$buildDir/containers")
     }
 
     systemProperties {
-      property "app.name", "rest-barebones"
+      property "app.name", "webcommondemo"
       property "app.logs", "$projectRoot/build/logs"
     }
   }
@@ -197,7 +289,8 @@ test {
 
   if (project.hasProperty("debug")) {
     def port = project.hasProperty("debugPort") ? project.debugPort : 8787
-    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=$port,server=y,suspend=y".tokenize(" ")
+    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=$port" +
+      ",server=y,suspend=y".tokenize(" ")
   }
 }
 
@@ -205,30 +298,20 @@ task wrapper(type: Wrapper) {
   gradleVersion = "2.6"
 }
 
-task loadVersion(group: "Versioning") {
-  project.version = readVersion()
+task sourcesJar(type: Jar) {
+  baseName artifactBaseName
+  classifier "sources"
+  from sourceSets.webcommon.allSource
 }
 
-ProjectVersion readVersion() {
-  if (!versionFile.exists()) {
-    throw new GradleException("Required version file does not exist: $versionFile.canonicalPath")
-  }
-
-  Properties props = new Properties()
-
-  versionFile.withInputStream { stream ->
-    props.load(stream)
-  }
-
-  new ProjectVersion(props.major.toInteger(), props.minor.toInteger(),
-    props.patch.toInteger(), props.release.toBoolean())
-}
-
-task printVersion(group: "Versioning") << {
-  logger.quiet "Version: $version"
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  baseName artifactBaseName
+  classifier "doc"
+  from javadoc.destinationDir
 }
 
 task buildWebcommon(type: Jar) {
+  baseName artifactBaseName
   from sourceSets.webcommon.output
 
   metaInf {
@@ -244,18 +327,25 @@ task integrationTestSetup(group: "Integration Test") << {
   }
 
   def driverName = "org.postgresql.Driver"
-  groovy.sql.Sql sql = groovy.sql.Sql.newInstance("jdbc:postgresql://localhost:5432/testdb", "rlwebapp", "password", driverName)
+  groovy.sql.Sql sql = groovy.sql.Sql.newInstance("jdbc:postgresql://localhost:5432/testdb",
+    "rlwebapp", "password", driverName)
 
   sql.execute("DELETE FROM rl.config;")
-  sql.execute("INSERT INTO rl.config (key, value) VALUES ('param1', 'This is param1 from the database');")
-  sql.execute("INSERT INTO rl.config (key, value) VALUES ('param3', 'This is param3 from the database');")
-  sql.execute("INSERT INTO rl.config (key, value) VALUES ('com.recursiveloop.webcommon.ConfigFactoryTest.param6', 'This is param6 from the database');")
-  sql.execute("INSERT INTO rl.config (key, value) VALUES ('ConfigFactoryTest.param7', 'This is param7 from the database');")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES " +
+    "('param1', 'This is param1 from the database');")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES " +
+    "('param3', 'This is param3 from the database');")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES " +
+    "('com.recursiveloop.webcommon.ConfigFactoryTest.param6', " +
+    "'This is param6 from the database');")
+  sql.execute("INSERT INTO rl.config (key, value) VALUES ('ConfigFactoryTest.param7', " +
+    "'This is param7 from the database');")
 }
 
 task integrationTestTearDown(group: "Integration Test") << {
   def driverName = "org.postgresql.Driver"
-  groovy.sql.Sql sql = groovy.sql.Sql.newInstance("jdbc:postgresql://localhost:5432/testdb", "rlwebapp", "password", driverName)
+  groovy.sql.Sql sql = groovy.sql.Sql.newInstance("jdbc:postgresql://localhost:5432/testdb",
+    "rlwebapp", "password", driverName)
 
   sql.execute("DELETE FROM rl.config;")
 }
@@ -271,7 +361,8 @@ task integrationTest(type: Test, group: "Integration Test") {
   def jvmArgs = ""
   if (project.hasProperty("debug")) {
     def port = project.hasProperty("debugPort") ? project.debugPort : 8787
-    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=$port,server=y,suspend=y"
+    jvmArgs = "-Xdebug -Xmx512m -XX:MaxPermSize=128m -Xrunjdwp:transport=dt_socket,address=" +
+      "$port,server=y,suspend=y"
   }
   else {
     jvmArgs = "-DDummy"
@@ -279,10 +370,12 @@ task integrationTest(type: Test, group: "Integration Test") {
 
   systemProperty "project.baseDir", projectRoot
   systemProperty "project.jvmArgs", jvmArgs
+  systemProperty "project.containerHome", containerConfig.absInstallationRoot
+  systemProperty "project.deploymentExportPath", "$projectRoot/build/integrationTestDeployments/"
 
   testLogging {
-//    exceptionFormat = "full"
-//    showStandardStreams = true
+    exceptionFormat = "full"
+    showStandardStreams = true
   }
 
   reports {
@@ -298,5 +391,42 @@ cargoRunLocal.dependsOn assemble
 assemble.dependsOn buildWebcommon
 
 artifacts {
-  webcommonCompile buildWebcommon
+  archives buildWebcommon
+  archives sourcesJar
+  archives javadocJar
+}
+
+distributions {
+  main {
+    baseName = artifactBaseName
+
+    contents {
+      from { libsDir }
+    }
+  }
+}
+
+publishing {
+  publications {
+    webcommon(MavenPublication) {
+      from components.java
+      artifactId "webcommon"
+
+      artifact sourcesJar
+      artifact javadocJar
+    }
+  }
+
+  repositories {
+    maven {
+      name "artifactory"
+      url project.version.toString().endsWith("-SNAPSHOT") ?
+        artifactorySnapshotRepoUrl : artifactoryReleaseRepoUrl
+
+      credentials {
+        username = artifactoryUsername
+        password = artifactoryPassword
+      }
+    }
+  }
 }

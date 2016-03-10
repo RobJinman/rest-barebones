@@ -19,7 +19,7 @@ import java.util.logging.Level;
 @ApplicationScoped
 public class Authentication {
   /**
-   * @Return An authentication token
+   * @return An authentication token
    */
   public String authenticate(String username, String password) throws SQLException {
     String q = "{ ? = call " + m_schema + ".pwauthenticate(?, ?) }";
@@ -47,7 +47,7 @@ public class Authentication {
   }
 
   /**
-   * @Returns The role to which the user belongs, or the value of UNAUTHORISED_ROLE on authentication failure
+   * @return The role to which the user belongs, or the value of UNAUTHORISED_ROLE on authentication failure
    */
   public String getRole(String username, String token) throws SQLException {
     if (username == null || token == null) {

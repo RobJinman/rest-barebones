@@ -9,3 +9,5 @@ curl -v -H "content-type: application/json" -d '{"username": "mrjim", "password"
 
 Access restricted resource
 curl -v --header "X-Username: mrjim" --header "X-Auth-Token: 9EA71865F7C970C374828861484E7604" localhost:9090/rest/restrictedresource
+
+curl -v localhost:9090/rest/unrestrictedresource

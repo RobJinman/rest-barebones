@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+  <Resource name="jdbc/maindb" type="javax.sql.DataSource" auth="Container" driverClassName="org.postgresql.Driver" factory="org.apache.tomcat.dbcp.dbcp.BasicDataSourceFactory" password="password" url="jdbc:postgresql://localhost:5432/maindb" username="rlwebapp"/>
+  <Resource name="jdbc/testdb" type="javax.sql.DataSource" auth="Container" driverClassName="org.postgresql.Driver" factory="org.apache.tomcat.dbcp.dbcp.BasicDataSourceFactory" password="password" url="jdbc:postgresql://localhost:5432/testdb" username="rlwebapp"/>
+  <Environment name="configDatabase" value="java:comp/env/jdbc/maindb" type="java.lang.String"/>
+  <Environment name="configTable" value="rl.config" type="java.lang.String"/>
+  <Environment name="configKeyColumn" value="key" type="java.lang.String"/>
+  <Environment name="configValueColumn" value="value" type="java.lang.String"/>
+</Context>
+

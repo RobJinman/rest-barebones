@@ -64,16 +64,16 @@ public class DatabaseConfig implements ApplicationConfig, Serializable {
 
   private static final Logger m_logger = Logger.getLogger(DatabaseConfig.class.getName());
 
-  @Resource(lookup="java:global/configDatabase")
+  @Resource(lookup="java:comp/env/configDatabase")
   String m_datasourceName;
 
-  @Resource(lookup="java:global/configTable")
+  @Resource(lookup="java:comp/env/configTable")
   String m_configTable;
 
-  @Resource(lookup="java:global/configKeyColumn")
+  @Resource(lookup="java:comp/env/configKeyColumn")
   String m_keyColumn;
 
-  @Resource(lookup="java:global/configValueColumn")
+  @Resource(lookup="java:comp/env/configValueColumn")
   String m_valueColumn;
 
   private Properties m_props;
