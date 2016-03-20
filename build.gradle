@@ -2,7 +2,7 @@ apply plugin: "war"
 apply plugin: "distribution"
 apply plugin: "maven-publish"
 apply plugin: "com.bmuschko.cargo"
-//apply plugin: "com.recursiveloop.buildcommon"
+apply plugin: "com.recursiveloop.buildcommon"
 
 ext {
   projectRoot = getProjectDir().getAbsolutePath()
@@ -183,10 +183,10 @@ dependencies {
 tasks.withType(JavaCompile) {
   options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 }
-/*
+
 versions {
   versionFile = file("version.properties")
-}*/
+}
 
 cargo {
   containerId = containerConfig.cargoId
