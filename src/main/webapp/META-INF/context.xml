@@ -7,7 +7,7 @@
     driverClassName="org.postgresql.Driver"
     url="jdbc:postgresql://localhost:5432/maindb"
     username="rlwebapp"
-    password="864ab14801c97c50"
+    password="password"
     maxActive="20"
     maxIdle="10"
     maxWait="-1" />

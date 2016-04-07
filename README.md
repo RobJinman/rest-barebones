@@ -12,7 +12,7 @@ To run locally, type
 
 ##Environment setup
 
-###WildFly 8.x
+###WildFly 10.x
 
 Install the Postgresql module. This involves copying the Postgresql JDBC driver to wildfly-8.2.0.Final/modules/org/postgresql/main and adding a module.xml file alongside it with the following contents:
 
@@ -36,7 +36,7 @@ Configure the DataSource in standalone.xml:
                 <driver>org.postgresql</driver>
                 <pool>
                     <min-pool-size>1</min-pool-size>
-                    <max-pool-size>4</max-pool-size>
+                    <max-pool-size>30</max-pool-size>
                     <prefill>false</prefill>
                     <use-strict-min>false</use-strict-min>
                     <flush-strategy>FailingConnectionOnly</flush-strategy>

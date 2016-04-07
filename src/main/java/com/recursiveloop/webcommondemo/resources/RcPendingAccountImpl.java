@@ -63,12 +63,12 @@ public class RcPendingAccountImpl implements RcPendingAccount {
         throw new ConflictException("Account with that email address already exists");
       }
       else {
-        m_logger.log(Level.SEVERE, "Error creating new user");
+        m_logger.log(Level.SEVERE, "Error creating new user", ex);
         throw ex;
       }
     }
     catch (MessagingException ex) {
-        m_logger.log(Level.SEVERE, "Error dispatching sign-up email");
+        m_logger.log(Level.SEVERE, "Error dispatching sign-up email", ex);
         throw new InternalServerException(ex);
     }
 

@@ -11,7 +11,6 @@ ext {
 
   tomcat = [
     cargoId: "tomee1x",
-    downloadUrl: "http://mirrors.ukfast.co.uk/sites/ftp.apache.org/tomee/tomee-1.7.4/apache-tomee-1.7.4-plus.zip",
     absInstallationRoot: "$projectRoot/containers/apache-tomee-1.7.4-plus/apache-tomee-plus-1.7.4/",
     configFile: "containerConfig/tomcat/context.xml",
     configFileDest: "conf",
@@ -23,23 +22,11 @@ ext {
     ]
   ]
 
-  wildfly9 = [
-    cargoId: "wildfly9x",
-    downloadUrl: "http://download.jboss.org/wildfly/9.0.2.Final/wildfly-9.0.2.Final.zip",
-    absInstallationRoot: "$projectRoot/build/containers/wildfly-9.0.2.Final/wildfly-9.0.2.Final/",
-    configFile: "containerConfig/wildfly9/standalone.xml",
-    configFileDest: "configuration",
-    arquillianDeps: [
-      "org.wildfly.arquillian:wildfly-arquillian-container-managed:1.0.2.Final"
-    ]
-  ]
-
   wildfly10 = [
     cargoId: "wildfly10x",
-    downloadUrl: "http://download.jboss.org/wildfly/10.0.0.Final/wildfly-10.0.0.Final.zip",
-    absInstallationRoot: "$projectRoot/build/containers/wildfly-10.0.0.Final/wildfly-10.0.0.Final/",
+    absInstallationRoot: "/opt/wildfly-10.0.0.Final",
     configFile: "containerConfig/wildfly10/standalone.xml",
-    configFileDest: "configuration",
+    configFileDest: "standalone/configuration",
     arquillianDeps: [
       "org.wildfly.arquillian:wildfly-arquillian-container-managed:1.0.2.Final"
     ]
@@ -47,16 +34,15 @@ ext {
 
   glassfish = [
     cargoId: "glassfish4x",
-    downloadUrl: "http://download.java.net/glassfish/4.1.1/release/glassfish-4.1.1.zip",
-    absInstallationRoot: "$projectRoot/build/containers/glassfish-4.1.1/glassfish4/",
-//    configFile: "containerConfig/glassfish/domain.xml",
+    absInstallationRoot: "$projectRoot/build/containers/glassfish-4.1/glassfish4/",
+    configFile: "containerConfig/glassfish/domain.xml",
     configFileDest: "cargo-domain/config",
     arquillianDeps: [
       "org.jboss.arquillian.container:arquillian-glassfish-managed-3.1:1.0.0.CR3"
     ]
   ]
 
-  containerConfig = glassfish
+  containerConfig = wildfly10
 
   artifactBaseName = "webcommon"
   artifactorySnapshotRepoUrl = "$artifactoryBaseUrl/libs-snapshot-local"
@@ -154,6 +140,12 @@ configurations {
 
   integrationTestCompile.extendsFrom testCompile
   integrationTestRuntime.extendsFrom testRuntime, integrationTestCompile
+
+  [integrationTestCompile, integrationTestRuntime]*.resolutionStrategy {
+//    failOnVersionConflict()
+
+    force "org.slf4j:slf4j-simple:1.7.+"
+  }
 }
 
 dependencies {
@@ -170,10 +162,10 @@ dependencies {
     "org.jboss.arquillian.protocol:arquillian-protocol-servlet:1.1.11.Final",
     "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-gradle-depchain:2.2.2",
     "org.jboss.arquillian.extension:arquillian-rest-client-impl-3x:1.0.0.Alpha3",
-    "org.jboss.arquillian.protocol:arquillian-protocol-servlet:1.1.7.Final",
     "org.jboss.resteasy:resteasy-jackson-provider:3.0.10.Final",
     "org.mockito:mockito-core:1.10.19",
-    "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain:2.1.1"
+    "org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain:2.1.1",
+    "org.slf4j:slf4j-simple:1.7.+"
   integrationTestCompile containerConfig.arquillianDeps
 
   cargo "org.codehaus.cargo:cargo-core-uberjar:$cargoVersion",
@@ -197,66 +189,11 @@ cargo {
   }
 
   local {
+    homeDir = file(containerConfig.absInstallationRoot)
     outputFile = file("build/output.log")
     logFile = file("build/log.log")
     logLevel = "high"
     timeout = 240000
-
-    if (containerConfig.configFile) {
-      configFile {
-        file = file(containerConfig.configFile)
-        toDir = containerConfig.configFileDest
-      }
-    }
-    else {
-      containerProperties {
-        property "cargo.datasource.datasource1",
-          "cargo.datasource.url=jdbc:postgresql://localhost:5432/maindb|" +
-          "cargo.datasource.driver=org.postgresql.Driver|" +
-          "cargo.datasource.jndi=jdbc/maindb|" +
-          "cargo.datasource.username=rlwebapp|" +
-          "cargo.datasource.password=password"
-
-        property "cargo.datasource.datasource2",
-          "cargo.datasource.url=jdbc:postgresql://localhost:5432/testdb|" +
-          "cargo.datasource.driver=org.postgresql.Driver|" +
-          "cargo.datasource.jndi=jdbc/testdb|" +
-          "cargo.datasource.username=rlwebapp|" +
-          "cargo.datasource.password=password"
-
-        property "cargo.resource.resource1",
-          "cargo.resource.name=java:global/configTable|" +
-          "cargo.resource.type=java.lang.CharSequence|"
-          "cargo.resource.class=java.lang.String|" +
-          "cargo.resource.parameters=java:comp/env/jdbc/maindb"
-
-        property "cargo.resource.resource2",
-          "cargo.resource.name=java:global/configDatabase|" +
-          "cargo.resource.type=java.lang.CharSequence|"
-          "cargo.resource.class=java.lang.String|" +
-          "cargo.resource.parameters=rl.config"
-
-        property "cargo.resource.resource3",
-          "cargo.resource.name=java:global/configKeyColumn|" +
-          "cargo.resource.type=java.lang.CharSequence|"
-          "cargo.resource.class=java.lang.String|" +
-          "cargo.resource.parameters=key"
-
-        property "cargo.resource.resource4",
-          "cargo.resource.name=java:global/configValueColumn|" +
-          "cargo.resource.type=java.lang.CharSequence|"
-          "cargo.resource.class=java.lang.String|" +
-          "cargo.resource.parameters=value"
-      }
-    }
-
-    extraClasspath = files("lib/postgresql-9.4.1208.jar") // TODO
-
-    installer {
-      installUrl = containerConfig.downloadUrl
-      downloadDir = file("$buildDir/download")
-      extractDir = file("$buildDir/containers")
-    }
 
     systemProperties {
       property "app.name", "webcommondemo"
@@ -320,7 +257,12 @@ task buildWebcommon(type: Jar) {
   }
 }
 
-task integrationTestSetup(group: "Integration Test") << {
+task configureContainer(type: Copy) {
+  from containerConfig.configFile
+  into containerConfig.absInstallationRoot + "/" + containerConfig.configFileDest
+}
+
+task integrationTestSetup(group: "Integration Test", dependsOn: configureContainer) << {
   URLClassLoader loader = GroovyObject.class.classLoader
   configurations.jdbcDriver.each {File file ->
     loader.addURL(file.toURL())

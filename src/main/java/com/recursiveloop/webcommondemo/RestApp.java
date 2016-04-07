@@ -9,6 +9,7 @@ import javax.ws.rs.ApplicationPath;
 
 @ApplicationPath("rest")
 public class RestApp extends Application {
+/*
   @Override
   public Set<Class<?>> getClasses() {
     Set<Class<?>> s = new HashSet<Class<?>>();
@@ -19,5 +20,5 @@ public class RestApp extends Application {
     s.add(RcUnrestrictedResourceImpl.class);
 
     return s;
-  }
+  }*/
 }

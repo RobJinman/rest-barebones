@@ -133,10 +133,10 @@
             <datasources>
                 <datasource jta="true" jndi-name="java:jboss/jdbc/maindb" pool-name="maindb" enabled="true" use-java-context="true" use-ccm="true">
                     <connection-url>jdbc:postgresql://localhost:5432/maindb</connection-url>
-                    <driver>org.codehaus.cargo.classpath.postgresql-9-3-1101-jdbc41</driver>
+                    <driver>org.postgresql</driver>
                     <pool>
                         <min-pool-size>1</min-pool-size>
-                        <max-pool-size>4</max-pool-size>
+                        <max-pool-size>30</max-pool-size>
                         <prefill>false</prefill>
                         <use-strict-min>false</use-strict-min>
                         <flush-strategy>FailingConnectionOnly</flush-strategy>
@@ -148,10 +148,10 @@
                 </datasource>
                 <datasource jta="true" jndi-name="java:jboss/jdbc/testdb" pool-name="testdb" enabled="true" use-java-context="true" use-ccm="true">
                     <connection-url>jdbc:postgresql://localhost:5432/testdb</connection-url>
-                    <driver>org.codehaus.cargo.classpath.postgresql-9-3-1101-jdbc41</driver>
+                    <driver>org.postgresql</driver>
                     <pool>
                         <min-pool-size>1</min-pool-size>
-                        <max-pool-size>4</max-pool-size>
+                        <max-pool-size>30</max-pool-size>
                         <prefill>false</prefill>
                         <use-strict-min>false</use-strict-min>
                         <flush-strategy>FailingConnectionOnly</flush-strategy>
@@ -162,7 +162,7 @@
                     </security>
                 </datasource>
                 <drivers>
-                    <driver name="org.codehaus.cargo.classpath.postgresql-9-3-1101-jdbc41" module="org.codehaus.cargo.classpath.postgresql-9-3-1101-jdbc41">
+                    <driver name="org.postgresql" module="org.postgresql">
                         <xa-datasource-class>org.postgresql.xa.PGXADataSource</xa-datasource-class>
                     </driver>
                 </drivers>
@@ -310,12 +310,6 @@
             </mail-session>
         </subsystem>
         <subsystem xmlns="urn:jboss:domain:naming:2.0">
-            <bindings>
-                <simple name="java:global/configDatabase" value="java:comp/env/jdbc/maindb"/>
-                <simple name="java:global/configTable" value="rl.config"/>
-                <simple name="java:global/configKeyColumn" value="key"/>
-                <simple name="java:global/configValueColumn" value="value"/>
-            </bindings>
             <remote-naming/>
         </subsystem>
         <subsystem xmlns="urn:jboss:domain:pojo:1.0"/>
