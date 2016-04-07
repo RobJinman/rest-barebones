@@ -176,6 +176,8 @@ tasks.withType(JavaCompile) {
   options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
 }
 
+group = "com.recursiveloop"
+
 versions {
   versionFile = file("version.properties")
 }
@@ -247,7 +249,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
   from javadoc.destinationDir
 }
 
-task buildWebcommon(type: Jar) {
+task webcommonJar(type: Jar) {
   baseName artifactBaseName
   from sourceSets.webcommon.output
 
@@ -330,10 +332,10 @@ integrationTest.dependsOn integrationTestSetup
 integrationTest.finalizedBy integrationTestTearDown
 
 cargoRunLocal.dependsOn assemble
-assemble.dependsOn buildWebcommon
+assemble.dependsOn webcommonJar
 
 artifacts {
-  archives buildWebcommon
+  archives webcommonJar
   archives sourcesJar
   archives javadocJar
 }
@@ -351,9 +353,9 @@ distributions {
 publishing {
   publications {
     webcommon(MavenPublication) {
-      from components.java
       artifactId "webcommon"
 
+      artifact webcommonJar
       artifact sourcesJar
       artifact javadocJar
     }
