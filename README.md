@@ -53,7 +53,7 @@ Install the Postgresql module. This involves copying the Postgresql JDBC driver 
             </dependencies>
         </module>
 
-Configure the datasources in standalone.xml. Add both a main database and a test database.
+Configure the datasources in containerConfig/wildfly10/standalone.xml. Add both a main database and a test database.
 
         <subsystem xmlns="urn:jboss:domain:datasources:2.0">
             <datasources>
