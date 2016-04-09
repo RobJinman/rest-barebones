@@ -110,6 +110,14 @@ Change the default port (e.g. to 8082) by editing /etc/default/jenkins and resta
 
         sudo service jenkins restart
 
+It might be desirable to change the user Jenkins runs as -- to 'username' for example. Edit /etc/default/jenkins and change JENKINS_USER and JENKINS_GROUP, then run
+
+        sudo chown -R username:username /var/lib/jenkins
+        sudo chown -R username:username /var/cache/jenkins
+        sudo chown -R username:username /var/log/jenkins
+
+        sudo service jenkins restart
+
 Navigate to localhost:8082, go to Manage Jenkins -> Manage Plugins and install the following
 
 * Git plugin
